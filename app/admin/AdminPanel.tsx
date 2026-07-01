@@ -1,0 +1,674 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  desa,
+  initialBerita,
+  initialGallery,
+  initialKegiatan,
+  initialMonografiDesa,
+} from "../lib/data";
+import { supabaseRequest } from "../lib/supabase";
+
+type AdminRecord = {
+  id: number;
+  [key: string]: string | number;
+};
+
+type FieldConfig = {
+  name: string;
+  label: string;
+  type?: "text" | "number" | "date" | "time" | "textarea" | "image";
+  required?: boolean;
+};
+
+type ResourceConfig = {
+  key: string;
+  label: string;
+  description: string;
+  fields: FieldConfig[];
+  initialData: AdminRecord[];
+  orderBy: string;
+  tableName: string;
+  titleField: string;
+};
+
+const storagePrefix = "plasan-admin";
+const emptyId = 0;
+
+const resources: ResourceConfig[] = [
+  {
+    key: "berita",
+    label: "Berita",
+    description: "Kelola judul, isi berita, gambar, penulis, dan tanggal publikasi.",
+    initialData: initialBerita as unknown as AdminRecord[],
+    orderBy: "tanggal_publish",
+    tableName: "berita",
+    titleField: "judul",
+    fields: [
+      { name: "judul", label: "Judul", required: true },
+      { name: "slug", label: "Slug" },
+      { name: "isi", label: "Isi", type: "textarea", required: true },
+      { name: "gambar", label: "Gambar", type: "image", required: true },
+      { name: "penulis", label: "Penulis", required: true },
+      { name: "tanggal_publish", label: "Tanggal Publish", type: "date", required: true },
+    ],
+  },
+  {
+    key: "kegiatan",
+    label: "Kegiatan",
+    description: "Kelola agenda, deskripsi, tanggal, waktu, dan gambar kegiatan desa.",
+    initialData: initialKegiatan as unknown as AdminRecord[],
+    orderBy: "tanggal_mulai",
+    tableName: "kegiatan",
+    titleField: "nama_kegiatan",
+    fields: [
+      { name: "nama_kegiatan", label: "Nama Kegiatan", required: true },
+      { name: "slug", label: "Slug" },
+      { name: "deskripsi", label: "Deskripsi", type: "textarea", required: true },
+      { name: "tanggal_mulai", label: "Tanggal Mulai", type: "date", required: true },
+      { name: "tanggal_selesai", label: "Tanggal Selesai", type: "date", required: true },
+      { name: "waktu_mulai", label: "Waktu Mulai", type: "time", required: true },
+      { name: "waktu_selesai", label: "Waktu Selesai", type: "time", required: true },
+      { name: "gambar", label: "Gambar", type: "image", required: true },
+    ],
+  },
+  {
+    key: "gallery",
+    label: "Galeri",
+    description: "Kelola dokumentasi foto, kategori, deskripsi, dan tanggal unggah.",
+    initialData: initialGallery as unknown as AdminRecord[],
+    orderBy: "tanggal_upload",
+    tableName: "gallery",
+    titleField: "judul",
+    fields: [
+      { name: "judul", label: "Judul", required: true },
+      { name: "deskripsi", label: "Deskripsi", type: "textarea", required: true },
+      { name: "gambar", label: "Gambar", type: "image", required: true },
+      { name: "kategori", label: "Kategori", required: true },
+      { name: "tanggal_upload", label: "Tanggal Upload", type: "date", required: true },
+    ],
+  },
+  {
+    key: "monografi",
+    label: "Monografi",
+    description: "Kelola data penduduk dan wilayah berdasarkan tahun.",
+    initialData: initialMonografiDesa as unknown as AdminRecord[],
+    orderBy: "tahun",
+    tableName: "monografi_desa",
+    titleField: "tahun",
+    fields: [
+      { name: "tahun", label: "Tahun", type: "number", required: true },
+      { name: "jumlah_penduduk", label: "Jumlah Penduduk", type: "number", required: true },
+      { name: "jumlah_laki_laki", label: "Jumlah Laki-laki", type: "number", required: true },
+      { name: "jumlah_perempuan", label: "Jumlah Perempuan", type: "number", required: true },
+      { name: "jumlah_kk", label: "Jumlah KK", type: "number", required: true },
+      { name: "jumlah_dusun", label: "Jumlah Dusun", type: "number", required: true },
+      { name: "jumlah_rt", label: "Jumlah RT", type: "number", required: true },
+      { name: "jumlah_rw", label: "Jumlah RW", type: "number", required: true },
+      { name: "luas_wilayah", label: "Luas Wilayah", required: true },
+      { name: "keterangan", label: "Keterangan", type: "textarea", required: true },
+    ],
+  },
+];
+
+const makeEmptyRecord = (resource: ResourceConfig): AdminRecord => {
+  const record: AdminRecord = { id: emptyId };
+
+  resource.fields.forEach((field) => {
+    record[field.name] = field.type === "number" ? 0 : "";
+  });
+
+  return record;
+};
+
+const loadSession = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.localStorage.getItem(`${storagePrefix}-session`) === "true";
+};
+
+const loadData = () => {
+  return resources.reduce<Record<string, AdminRecord[]>>((collection, resource) => {
+    collection[resource.key] = resource.initialData;
+    return collection;
+  }, {});
+};
+
+const readImageFile = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Terjadi error yang tidak diketahui.";
+};
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+export default function AdminPanel() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(loadSession);
+  const [loginError, setLoginError] = useState("");
+  const [activeKey, setActiveKey] = useState(resources[0].key);
+  const [data, setData] = useState<Record<string, AdminRecord[]>>(loadData);
+  const [editing, setEditing] = useState<AdminRecord | null>(null);
+  const [imageDrafts, setImageDrafts] = useState<Record<string, string>>({});
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusType, setStatusType] = useState<"success" | "error" | "info" | "">("");
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/");
+    }
+  }, [isAuthenticated, router]);
+
+  const activeResource = useMemo(
+    () => resources.find((resource) => resource.key === activeKey) ?? resources[0],
+    [activeKey],
+  );
+
+  const activeRows = data[activeResource.key] ?? activeResource.initialData;
+  const formRecord = editing ?? makeEmptyRecord(activeResource);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    let ignore = false;
+
+    supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+      query: `?select=*&order=${activeResource.orderBy}.desc`,
+    })
+      .then((rows) => {
+        if (!ignore) {
+          setData((current) => ({ ...current, [activeResource.key]: rows }));
+          setStatusMessage("");
+          setStatusType("");
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setStatusMessage("Data belum bisa dimuat dari Supabase. Cek env, tabel, atau policy Supabase.");
+          setStatusType("error");
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [activeResource, isAuthenticated]);
+
+  const saveRows = (resourceKey: string, rows: AdminRecord[]) => {
+    setData((current) => ({ ...current, [resourceKey]: rows }));
+  };
+
+  const reloadRows = async () => {
+    const rows = await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+      query: `?select=*&order=${activeResource.orderBy}.desc`,
+    });
+    saveRows(activeResource.key, rows);
+  };
+
+  const handleImageFile = async (fieldName: string, file?: File) => {
+    if (!file || !file.type.startsWith("image/")) {
+      return;
+    }
+
+    const imageData = await readImageFile(file);
+    setImageDrafts((current) => ({ ...current, [fieldName]: imageData }));
+  };
+
+  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const username = String(formData.get("username"));
+    const password = String(formData.get("password"));
+
+    if (username === "admin" && password === "plasan123") {
+      window.localStorage.setItem(`${storagePrefix}-session`, "true");
+      setIsAuthenticated(true);
+      setLoginError("");
+      return;
+    }
+
+    setLoginError("Username atau password tidak sesuai.");
+  };
+
+  const handleLogout = () => {
+    window.localStorage.removeItem(`${storagePrefix}-session`);
+    setIsAuthenticated(false);
+    setEditing(null);
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const nextRecord: AdminRecord = { id: formRecord.id };
+
+    activeResource.fields.forEach((field) => {
+      if (field.type === "image") {
+        const currentImage = String(formRecord[field.name] ?? "");
+        nextRecord[field.name] = imageDrafts[field.name] || currentImage;
+        return;
+      }
+
+      const rawValue = String(formData.get(field.name) ?? "");
+      nextRecord[field.name] = field.type === "number" ? Number(rawValue) : rawValue;
+    });
+
+    // Validasi Form
+    let validationError = "";
+
+    // 1. Validasi dasar: tidak boleh kosong untuk kolom required
+    for (const field of activeResource.fields) {
+      const value = nextRecord[field.name];
+
+      if (field.required) {
+        if (value === undefined || value === null || String(value).trim() === "") {
+          validationError = `Kolom "${field.label}" tidak boleh kosong.`;
+          break;
+        }
+        if (field.type === "number") {
+          const numVal = Number(value);
+          if (isNaN(numVal)) {
+            validationError = `Kolom "${field.label}" harus berupa angka yang valid.`;
+            break;
+          }
+        }
+      }
+    }
+
+    // 2. Validasi format spesifik sesuai dengan jenis data
+    if (!validationError) {
+      if (activeResource.key === "berita") {
+        if (String(nextRecord.judul).trim().length < 3) {
+          validationError = "Judul berita minimal harus terdiri dari 3 karakter.";
+        } else if (String(nextRecord.isi).trim().length < 10) {
+          validationError = "Isi berita minimal harus terdiri dari 10 karakter.";
+        }
+      } else if (activeResource.key === "kegiatan") {
+        if (String(nextRecord.nama_kegiatan).trim().length < 3) {
+          validationError = "Nama kegiatan minimal harus terdiri dari 3 karakter.";
+        } else if (String(nextRecord.deskripsi).trim().length < 10) {
+          validationError = "Deskripsi kegiatan minimal harus terdiri dari 10 karakter.";
+        } else {
+          // Validasi Urutan Tanggal & Waktu
+          const startDate = new Date(String(nextRecord.tanggal_mulai));
+          const endDate = new Date(String(nextRecord.tanggal_selesai));
+          if (startDate > endDate) {
+            validationError = "Tanggal selesai kegiatan tidak boleh mendahului tanggal mulai.";
+          } else if (String(nextRecord.tanggal_mulai) === String(nextRecord.tanggal_selesai)) {
+            const timeStart = String(nextRecord.waktu_mulai);
+            const timeEnd = String(nextRecord.waktu_selesai);
+            if (timeStart >= timeEnd) {
+              validationError = "Waktu selesai harus setelah waktu mulai untuk kegiatan di hari yang sama.";
+            }
+          }
+        }
+      } else if (activeResource.key === "gallery") {
+        if (String(nextRecord.judul).trim().length < 3) {
+          validationError = "Judul galeri minimal harus terdiri dari 3 karakter.";
+        } else if (String(nextRecord.deskripsi).trim().length < 5) {
+          validationError = "Deskripsi galeri minimal harus terdiri dari 5 karakter.";
+        }
+      } else if (activeResource.key === "monografi") {
+        const tahun = Number(nextRecord.tahun);
+        const totalPenduduk = Number(nextRecord.jumlah_penduduk);
+        const laki = Number(nextRecord.jumlah_laki_laki);
+        const perempuan = Number(nextRecord.jumlah_perempuan);
+        const kk = Number(nextRecord.jumlah_kk);
+        const dusun = Number(nextRecord.jumlah_dusun);
+        const rt = Number(nextRecord.jumlah_rt);
+        const rw = Number(nextRecord.jumlah_rw);
+
+        if (tahun < 1900 || tahun > 2100) {
+          validationError = "Tahun monografi harus valid (antara tahun 1900 dan 2100).";
+        } else if (
+          totalPenduduk < 0 ||
+          laki < 0 ||
+          perempuan < 0 ||
+          kk < 0 ||
+          dusun < 0 ||
+          rt < 0 ||
+          rw < 0
+        ) {
+          validationError = "Semua data angka monografi tidak boleh bernilai negatif.";
+        } else if (laki + perempuan !== totalPenduduk) {
+          validationError = `Jumlah penduduk laki-laki (${laki}) ditambah perempuan (${perempuan}) harus sama dengan total jumlah penduduk (${totalPenduduk}).`;
+        } else if (kk > totalPenduduk) {
+          validationError = "Jumlah Kepala Keluarga (KK) tidak boleh melebihi total jumlah penduduk.";
+        }
+      }
+    }
+
+    // Jika terjadi error validasi, tampilkan pesan error dan hentikan simpan
+    if (validationError) {
+      setStatusMessage(validationError);
+      setStatusType("error");
+      return;
+    }
+
+    if ("slug" in nextRecord) {
+      const titleValue = String(nextRecord[activeResource.titleField] ?? "");
+      const submittedSlug = String(nextRecord.slug ?? "");
+      const fallbackSlug = slugify(titleValue) || `${activeResource.key}-${Date.now()}`;
+      nextRecord.slug =
+        nextRecord.id === emptyId
+          ? `${slugify(submittedSlug) || fallbackSlug}-${Date.now()}`
+          : slugify(submittedSlug) || fallbackSlug;
+    }
+
+    const { id, ...payload } = nextRecord;
+
+    try {
+      if (id === emptyId) {
+        await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+          method: "POST",
+          body: payload,
+        });
+      } else {
+        await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+          method: "PATCH",
+          query: `?id=eq.${id}`,
+          body: payload,
+        });
+      }
+
+      await reloadRows();
+      setEditing(null);
+      setImageDrafts({});
+      setStatusMessage("Data berhasil disimpan ke Supabase.");
+      setStatusType("success");
+      form.reset();
+    } catch (error) {
+      setStatusMessage(`Data gagal disimpan: ${getErrorMessage(error)}`);
+      setStatusType("error");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+        method: "DELETE",
+        query: `?id=eq.${id}`,
+      });
+      await reloadRows();
+      setEditing(null);
+      setImageDrafts({});
+      setStatusMessage("Data berhasil dihapus dari Supabase.");
+      setStatusType("success");
+    } catch (error) {
+      setStatusMessage(`Data gagal dihapus: ${getErrorMessage(error)}`);
+      setStatusType("error");
+    }
+  };
+
+  const handleReset = async () => {
+    try {
+      await reloadRows();
+      setEditing(null);
+      setImageDrafts({});
+      setStatusMessage("Data terbaru berhasil dimuat dari Supabase.");
+      setStatusType("success");
+    } catch (error) {
+      setStatusMessage(`Data gagal dimuat ulang: ${getErrorMessage(error)}`);
+      setStatusType("error");
+    }
+  };
+
+  const selectResource = (resourceKey: string) => {
+    setActiveKey(resourceKey);
+    setEditing(null);
+    setImageDrafts({});
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-[#f6f3ec] px-5 py-10 text-[#1e2c26] sm:px-8">
+        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center">
+          <section className="w-full rounded-lg border border-[#d8d1c0] bg-white p-7 shadow-sm">
+            <p className="text-sm font-semibold text-[#697a36] animate-pulse">Mengalihkan...</p>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f6f3ec] text-[#1e2c26]">
+      <header className="border-b border-[#d8d1c0] bg-white">
+        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
+          <div className="flex items-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-desa.png" alt={`Logo ${desa.nama}`} className="h-8 w-auto object-contain" />
+            <div>
+              <p className="text-xs font-semibold text-[#697a36]">Admin</p>
+              <h1 className="text-base font-bold leading-none">{desa.nama}</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold" href="/">
+              Website
+            </Link>
+            <button
+              className="rounded-md bg-[#1b352c] px-4 py-2 text-sm font-semibold text-white"
+              onClick={handleLogout}
+              type="button"
+            >
+              Logout
+            </button>
+          </div>
+        </nav>
+      </header>
+
+      <section className="mx-auto grid max-w-7xl gap-6 px-5 py-8 sm:px-8 lg:grid-cols-[260px_1fr]">
+        <aside className="space-y-2">
+          {resources.map((resource) => (
+            <button
+              className={`w-full rounded-md px-4 py-3 text-left text-sm font-semibold transition ${
+                resource.key === activeResource.key
+                  ? "bg-[#1b352c] text-white"
+                  : "border border-[#d8d1c0] bg-white hover:border-[#697a36]"
+              }`}
+              key={resource.key}
+              onClick={() => selectResource(resource.key)}
+              type="button"
+            >
+              {resource.label}
+            </button>
+          ))}
+        </aside>
+
+        <div className="space-y-6">
+          <section className="rounded-lg border border-[#d8d1c0] bg-white p-6 shadow-sm">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+              <div>
+                <p className="section-kicker">{activeResource.label}</p>
+                <h2 className="text-2xl font-bold">Form {editing ? "Edit" : "Tambah"} Data</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b6b63]">{activeResource.description}</p>
+              </div>
+              <button
+                className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold"
+                onClick={() => {
+                  setEditing(null);
+                  setImageDrafts({});
+                }}
+                type="button"
+              >
+                Form Baru
+              </button>
+            </div>
+
+            <form key={`${activeResource.key}-${formRecord.id}`} className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
+              {activeResource.fields.map((field) => (
+                <div
+                  className={`block text-sm font-semibold ${field.type === "textarea" ? "md:col-span-2" : ""}`}
+                  key={field.name}
+                >
+                  <span>{field.label}</span>
+                  {field.type === "textarea" ? (
+                    <textarea
+                      className="mt-2 min-h-28 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36]"
+                      defaultValue={String(formRecord[field.name] ?? "")}
+                      name={field.name}
+                      required={field.required}
+                    />
+                  ) : field.type === "image" ? (
+                    <ImageUploadField
+                      field={field}
+                      onFileSelect={handleImageFile}
+                      value={imageDrafts[field.name] || String(formRecord[field.name] ?? "")}
+                    />
+                  ) : (
+                    <input
+                      className="mt-2 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36]"
+                      defaultValue={String(formRecord[field.name] ?? "")}
+                      name={field.name}
+                      required={field.required}
+                      type={field.type ?? "text"}
+                    />
+                  )}
+                </div>
+              ))}
+              <div className="flex flex-wrap gap-3 md:col-span-2">
+                <button className="rounded-md bg-[#1b352c] px-5 py-3 text-sm font-bold text-white" type="submit">
+                  {editing ? "Simpan Perubahan" : "Tambah Data"}
+                </button>
+                <button
+                  className="rounded-md border border-[#d8d1c0] px-5 py-3 text-sm font-bold"
+                  onClick={handleReset}
+                  type="button"
+                >
+                  Muat Ulang Data
+                </button>
+              </div>
+              {statusMessage ? (
+                <div
+                  className={`flex items-center gap-2.5 rounded-lg px-4 py-3.5 text-sm font-semibold border md:col-span-2 transition-all duration-200 ${
+                    statusType === "error"
+                      ? "bg-red-50 text-red-700 border-red-200"
+                      : statusType === "success"
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                      : "bg-[#fcfbfa] text-[#5b6b63] border-[#e0dacb]"
+                  }`}
+                >
+                  {statusType === "error" ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  ) : statusType === "success" ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-[#8e8570]" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span>{statusMessage}</span>
+                </div>
+              ) : null}
+            </form>
+          </section>
+
+          <section className="overflow-hidden rounded-lg border border-[#d8d1c0] bg-white shadow-sm">
+            <div className="border-b border-[#e7e1d3] p-6">
+              <h2 className="text-2xl font-bold">Daftar {activeResource.label}</h2>
+              <p className="mt-2 text-sm text-[#5b6b63]">Total data: {activeRows.length}</p>
+            </div>
+            <div className="divide-y divide-[#e7e1d3]">
+              {activeRows.map((row) => (
+                <article className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center" key={row.id}>
+                  <div>
+                    <p className="font-bold">{String(row[activeResource.titleField])}</p>
+                    <p className="mt-1 text-sm text-[#5b6b63]">ID: {row.id}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold"
+                      onClick={() => {
+                        setEditing(row);
+                        setImageDrafts({});
+                      }}
+                      type="button"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white"
+                      onClick={() => handleDelete(row.id)}
+                      type="button"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function ImageUploadField({
+  field,
+  onFileSelect,
+  value,
+}: {
+  field: FieldConfig;
+  onFileSelect: (fieldName: string, file?: File) => void;
+  value: string;
+}) {
+  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    onFileSelect(field.name, event.dataTransfer.files[0]);
+  };
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onFileSelect(field.name, event.target.files?.[0]);
+  };
+
+  return (
+    <div
+      className="mt-2 rounded-md border border-dashed border-[#b9b094] bg-[#fbfaf6] p-4"
+      onDragOver={(event) => event.preventDefault()}
+    >
+      <label
+        className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-md bg-white px-4 py-5 text-center transition hover:bg-[#f6f3ec]"
+        onDrop={handleDrop}
+      >
+        <input accept="image/*" className="sr-only" name={field.name} onChange={handleChange} type="file" />
+        {value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img alt="Pratinjau gambar" className="mb-4 max-h-44 rounded-md object-cover" src={value} />
+        ) : null}
+        <span className="text-sm font-bold text-[#1b352c]">Pilih gambar dari device</span>
+        <span className="mt-1 text-xs font-medium text-[#5b6b63]">
+          Klik area ini atau drag and drop file gambar ke sini
+        </span>
+      </label>
+      <input name={`${field.name}_existing`} readOnly type="hidden" value={value} />
+    </div>
+  );
+}
