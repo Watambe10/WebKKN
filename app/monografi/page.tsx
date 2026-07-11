@@ -9,7 +9,7 @@ export const revalidate = 1;
 export const metadata: Metadata = {
   title: `Monografi Desa | ${desa.nama}`,
   description:
-    "Halaman monografi Padukuhan Plasan berisi data penduduk, kepala keluarga, dusun, RT, RW, dan luas wilayah.",
+    "Halaman monografi Padukuhan Plasan berisi data penduduk, kepala keluarga, dusun, RT, RW, tingkat pendidikan, struktur kepengurusan RT/RW, dan luas wilayah.",
 };
 
 async function getMonografiData() {
@@ -23,7 +23,17 @@ async function getMonografiData() {
 
 export default async function MonografiPage() {
   const monografiDesa = await getMonografiData();
-  const monografiTerbaru = monografiDesa[0];
+  const monografiTerbaru = monografiDesa[0] || initialMonografiDesa[0];
+
+  const totalPenduduk = monografiTerbaru.jumlah_penduduk || 1;
+  const pctAnak = (((monografiTerbaru.jumlah_anak || 0) / totalPenduduk) * 100);
+  const pctBalita = (((monografiTerbaru.jumlah_balita || 0) / totalPenduduk) * 100);
+  
+  const pctPaud = (((monografiTerbaru.pendidikan_paud || 0) / totalPenduduk) * 100);
+  const pctSd = (((monografiTerbaru.pendidikan_sd || 0) / totalPenduduk) * 100);
+  const pctSmp = (((monografiTerbaru.pendidikan_smp || 0) / totalPenduduk) * 100);
+  const pctSma = (((monografiTerbaru.pendidikan_sma || 0) / totalPenduduk) * 100);
+
   const statCards = [
     {
       label: "Jumlah Penduduk",
@@ -70,7 +80,8 @@ export default async function MonografiPage() {
         </nav>
       </header>
 
-      <section className="bg-[#1b352c] px-5 py-24 text-white sm:px-8">
+      {/* Hero Section */}
+      <section className="bg-[#1b352c] px-5 py-20 text-white sm:px-8">
         <div className="mx-auto max-w-7xl">
           <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-[#e7c765]">
             Monografi Wilayah
@@ -79,13 +90,14 @@ export default async function MonografiPage() {
             Data Kependudukan & Wilayah {desa.nama}
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-white/70">
-            Halaman ini menyajikan rekapitulasi data demografis, pembagian administratif,
-            dan luas wilayah {desa.namaSingkat} untuk mewujudkan keterbukaan informasi bagi warga.
+            Penyajian informasi data kependudukan terbaru, peta administratif, jenjang pendidikan, 
+            dan kepengurusan RT/RW secara terpadu di {desa.namaSingkat}.
           </p>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8">
+      {/* Main Core Stat Cards */}
+      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {statCards.map((item) => (
             <article key={item.label} className="rounded-xl border border-[#e0dacb] bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/50 hover:-translate-y-0.5">
@@ -97,6 +109,199 @@ export default async function MonografiPage() {
         </div>
       </section>
 
+      {/* Regional Map & Demographics Split Layout */}
+      <section className="mx-auto max-w-7xl px-5 py-6 sm:px-8 grid gap-8 lg:grid-cols-12">
+        {/* Peta Wilayah Column */}
+        <div className="lg:col-span-7 flex flex-col">
+          <div className="rounded-xl border border-[#e0dacb] bg-white p-6 shadow-sm flex flex-col flex-grow">
+            <h3 className="text-lg font-bold text-[#1e2c26] font-serif mb-2">Peta Wilayah</h3>
+            <p className="text-sm text-[#5b6b63] mb-6">Peta administratif batas wilayah {desa.nama}.</p>
+            
+            <div className="relative overflow-hidden rounded-lg border border-[#e7e1d3] bg-[#fbfaf6] flex-grow flex items-center justify-center min-h-[320px]">
+              {monografiTerbaru.peta_wilayah ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  src={monografiTerbaru.peta_wilayah} 
+                  alt="Peta Wilayah Padukuhan Plasan" 
+                  className="max-h-[420px] w-auto object-contain transition-transform duration-500 hover:scale-105"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8 text-center text-[#8e8570]">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 text-[#b9b094] mb-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8m-9-10.5a.75.75 0 01.75-.75h7.5a.75.75 0 01.75.75v11.25a.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V5.25z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12h19.5M12 2.25v19.5" />
+                  </svg>
+                  <p className="font-bold text-[#5b6b63]">Gambar Peta Belum Tersedia</p>
+                  <p className="text-xs mt-1 text-[#8e8570] max-w-sm">Gambar peta wilayah belum diunggah. Pengurus dapat mengunggah gambar peta melalui Panel Admin pada halaman Monografi.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Detailed Stats Column (Children, Toddlers, Education) */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
+          {/* Children & Toddlers Stats Card */}
+          <div className="rounded-xl border border-[#e0dacb] bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-[#1e2c26] font-serif mb-4">Detail Usia Rentan</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-4 transition hover:border-[#697a36]/30">
+                <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Jumlah Anak</span>
+                <span className="text-2xl font-bold block mt-2 text-[#1e2c26]">{formatNumber(monografiTerbaru.jumlah_anak || 0)} <span className="text-sm font-medium text-[#5b6b63]">jiwa</span></span>
+                <span className="text-xs text-[#5b6b63] mt-1 block">{(pctAnak).toFixed(1)}% dari total warga</span>
+              </div>
+              <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-4 transition hover:border-[#697a36]/30">
+                <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Jumlah Balita</span>
+                <span className="text-2xl font-bold block mt-2 text-[#1e2c26]">{formatNumber(monografiTerbaru.jumlah_balita || 0)} <span className="text-sm font-medium text-[#5b6b63]">jiwa</span></span>
+                <span className="text-xs text-[#5b6b63] mt-1 block">{(pctBalita).toFixed(1)}% dari total warga</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Education Statistics Card */}
+          <div className="rounded-xl border border-[#e0dacb] bg-white p-6 shadow-sm flex-grow">
+            <h3 className="text-lg font-bold text-[#1e2c26] font-serif mb-2">Tingkat Pendidikan</h3>
+            <p className="text-sm text-[#5b6b63] mb-6">Persentase warga yang sedang/telah menempuh jenjang pendidikan.</p>
+
+            <div className="space-y-5">
+              {/* PAUD */}
+              <div>
+                <div className="flex justify-between text-xs font-semibold mb-1.5 text-[#4a5b52]">
+                  <span>Pendidikan PAUD</span>
+                  <span className="font-bold text-[#1e2c26]">{formatNumber(monografiTerbaru.pendidikan_paud || 0)} jiwa ({(pctPaud).toFixed(1)}%)</span>
+                </div>
+                <div className="w-full bg-[#e0dacb]/60 h-2.5 rounded-full overflow-hidden">
+                  <div className="bg-[#697a36] h-full rounded-full transition-all duration-500" style={{ width: `${pctPaud}%` }} />
+                </div>
+              </div>
+
+              {/* SD */}
+              <div>
+                <div className="flex justify-between text-xs font-semibold mb-1.5 text-[#4a5b52]">
+                  <span>Pendidikan SD / Sederajat</span>
+                  <span className="font-bold text-[#1e2c26]">{formatNumber(monografiTerbaru.pendidikan_sd || 0)} jiwa ({(pctSd).toFixed(1)}%)</span>
+                </div>
+                <div className="w-full bg-[#e0dacb]/60 h-2.5 rounded-full overflow-hidden">
+                  <div className="bg-[#697a36] h-full rounded-full transition-all duration-500" style={{ width: `${pctSd}%` }} />
+                </div>
+              </div>
+
+              {/* SMP */}
+              <div>
+                <div className="flex justify-between text-xs font-semibold mb-1.5 text-[#4a5b52]">
+                  <span>Pendidikan SMP / Sederajat</span>
+                  <span className="font-bold text-[#1e2c26]">{formatNumber(monografiTerbaru.pendidikan_smp || 0)} jiwa ({(pctSmp).toFixed(1)}%)</span>
+                </div>
+                <div className="w-full bg-[#e0dacb]/60 h-2.5 rounded-full overflow-hidden">
+                  <div className="bg-[#697a36] h-full rounded-full transition-all duration-500" style={{ width: `${pctSmp}%` }} />
+                </div>
+              </div>
+
+              {/* SMA */}
+              <div>
+                <div className="flex justify-between text-xs font-semibold mb-1.5 text-[#4a5b52]">
+                  <span>Pendidikan SMA / Sederajat</span>
+                  <span className="font-bold text-[#1e2c26]">{formatNumber(monografiTerbaru.pendidikan_sma || 0)} jiwa ({(pctSma).toFixed(1)}%)</span>
+                </div>
+                <div className="w-full bg-[#e0dacb]/60 h-2.5 rounded-full overflow-hidden">
+                  <div className="bg-[#697a36] h-full rounded-full transition-all duration-500" style={{ width: `${pctSma}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Structure of RT & RW Section */}
+      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
+        <div className="mb-8">
+          <p className="section-kicker">Struktur Kepemimpinan</p>
+          <h2 className="section-title">Struktur Ketua RW & Ketua RT</h2>
+          <p className="mt-2 text-sm leading-relaxed text-[#5b6b63] max-w-2xl">
+            Pembagian administrasi kepengurusan wilayah {desa.namaSingkat} yang terdiri dari 3 RW (Rukun Warga) dan 6 RT (Rukun Tetangga).
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* RW 1 */}
+          <div className="rounded-xl border border-[#e0dacb] bg-white p-6 shadow-sm flex flex-col gap-4 border-t-4 border-t-[#697a36]">
+            <div>
+              <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Wilayah Administrasi</span>
+              <h3 className="text-xl font-bold font-serif text-[#1e2c26] mt-1">Rukun Warga 01</h3>
+              <p className="text-xs text-[#5b6b63] mt-0.5">Membawahi RT 01 dan RT 02</p>
+            </div>
+            
+            <div className="bg-[#1b352c] text-white rounded-lg p-4 shadow-sm">
+              <span className="text-[10px] font-bold text-[#e7c765] uppercase tracking-widest block">Ketua RW 01</span>
+              <p className="text-base font-bold mt-1">{monografiTerbaru.ketua_rw_1 || "-"}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-3 text-center">
+                <span className="text-[10px] font-bold text-[#697a36] uppercase block">Ketua RT 01</span>
+                <p className="text-sm font-bold mt-1 text-[#1e2c26] truncate" title={monografiTerbaru.ketua_rt_1}>{monografiTerbaru.ketua_rt_1 || "-"}</p>
+              </div>
+              <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-3 text-center">
+                <span className="text-[10px] font-bold text-[#697a36] uppercase block">Ketua RT 02</span>
+                <p className="text-sm font-bold mt-1 text-[#1e2c26] truncate" title={monografiTerbaru.ketua_rt_2}>{monografiTerbaru.ketua_rt_2 || "-"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* RW 2 */}
+          <div className="rounded-xl border border-[#e0dacb] bg-white p-6 shadow-sm flex flex-col gap-4 border-t-4 border-t-[#697a36]">
+            <div>
+              <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Wilayah Administrasi</span>
+              <h3 className="text-xl font-bold font-serif text-[#1e2c26] mt-1">Rukun Warga 02</h3>
+              <p className="text-xs text-[#5b6b63] mt-0.5">Membawahi RT 03 dan RT 04</p>
+            </div>
+            
+            <div className="bg-[#1b352c] text-white rounded-lg p-4 shadow-sm">
+              <span className="text-[10px] font-bold text-[#e7c765] uppercase tracking-widest block">Ketua RW 02</span>
+              <p className="text-base font-bold mt-1">{monografiTerbaru.ketua_rw_2 || "-"}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-3 text-center">
+                <span className="text-[10px] font-bold text-[#697a36] uppercase block">Ketua RT 03</span>
+                <p className="text-sm font-bold mt-1 text-[#1e2c26] truncate" title={monografiTerbaru.ketua_rt_3}>{monografiTerbaru.ketua_rt_3 || "-"}</p>
+              </div>
+              <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-3 text-center">
+                <span className="text-[10px] font-bold text-[#697a36] uppercase block">Ketua RT 04</span>
+                <p className="text-sm font-bold mt-1 text-[#1e2c26] truncate" title={monografiTerbaru.ketua_rt_4}>{monografiTerbaru.ketua_rt_4 || "-"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* RW 3 */}
+          <div className="rounded-xl border border-[#e0dacb] bg-white p-6 shadow-sm flex flex-col gap-4 border-t-4 border-t-[#697a36]">
+            <div>
+              <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Wilayah Administrasi</span>
+              <h3 className="text-xl font-bold font-serif text-[#1e2c26] mt-1">Rukun Warga 03</h3>
+              <p className="text-xs text-[#5b6b63] mt-0.5">Membawahi RT 05 dan RT 06</p>
+            </div>
+            
+            <div className="bg-[#1b352c] text-white rounded-lg p-4 shadow-sm">
+              <span className="text-[10px] font-bold text-[#e7c765] uppercase tracking-widest block">Ketua RW 03</span>
+              <p className="text-base font-bold mt-1">{monografiTerbaru.ketua_rw_3 || "-"}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-3 text-center">
+                <span className="text-[10px] font-bold text-[#697a36] uppercase block">Ketua RT 05</span>
+                <p className="text-sm font-bold mt-1 text-[#1e2c26] truncate" title={monografiTerbaru.ketua_rt_5}>{monografiTerbaru.ketua_rt_5 || "-"}</p>
+              </div>
+              <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-3 text-center">
+                <span className="text-[10px] font-bold text-[#697a36] uppercase block">Ketua RT 06</span>
+                <p className="text-sm font-bold mt-1 text-[#1e2c26] truncate" title={monografiTerbaru.ketua_rt_6}>{monografiTerbaru.ketua_rt_6 || "-"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Historical Monografi Table Section */}
       <section className="mx-auto max-w-7xl px-5 pb-24 sm:px-8">
         <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
@@ -146,3 +351,4 @@ export default async function MonografiPage() {
     </main>
   );
 }
+

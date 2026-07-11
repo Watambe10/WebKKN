@@ -109,6 +109,22 @@ const resources: ResourceConfig[] = [
       { name: "jumlah_rt", label: "Jumlah RT", type: "number", required: true },
       { name: "jumlah_rw", label: "Jumlah RW", type: "number", required: true },
       { name: "luas_wilayah", label: "Luas Wilayah", required: true },
+      { name: "jumlah_anak", label: "Jumlah Anak", type: "number", required: true },
+      { name: "jumlah_balita", label: "Jumlah Balita", type: "number", required: true },
+      { name: "pendidikan_paud", label: "Pendidikan PAUD", type: "number", required: true },
+      { name: "pendidikan_sd", label: "Pendidikan SD", type: "number", required: true },
+      { name: "pendidikan_smp", label: "Pendidikan SMP", type: "number", required: true },
+      { name: "pendidikan_sma", label: "Pendidikan SMA", type: "number", required: true },
+      { name: "ketua_rt_1", label: "Ketua RT 1", required: true },
+      { name: "ketua_rt_2", label: "Ketua RT 2", required: true },
+      { name: "ketua_rt_3", label: "Ketua RT 3", required: true },
+      { name: "ketua_rt_4", label: "Ketua RT 4", required: true },
+      { name: "ketua_rt_5", label: "Ketua RT 5", required: true },
+      { name: "ketua_rt_6", label: "Ketua RT 6", required: true },
+      { name: "ketua_rw_1", label: "Ketua RW 1 (RT 1, 2)", required: true },
+      { name: "ketua_rw_2", label: "Ketua RW 2 (RT 3, 4)", required: true },
+      { name: "ketua_rw_3", label: "Ketua RW 3 (RT 5, 6)", required: true },
+      { name: "peta_wilayah", label: "Peta Wilayah (Gambar)", type: "image", required: false },
       { name: "keterangan", label: "Keterangan", type: "textarea", required: true },
     ],
   },
@@ -172,6 +188,19 @@ export default function AdminPanel() {
   const [imageDrafts, setImageDrafts] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<"success" | "error" | "info" | "">("");
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    type: "add" | "edit" | "delete" | "reset";
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    type: "add",
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -339,6 +368,12 @@ export default function AdminPanel() {
         const dusun = Number(nextRecord.jumlah_dusun);
         const rt = Number(nextRecord.jumlah_rt);
         const rw = Number(nextRecord.jumlah_rw);
+        const anak = Number(nextRecord.jumlah_anak);
+        const balita = Number(nextRecord.jumlah_balita);
+        const paud = Number(nextRecord.pendidikan_paud);
+        const sd = Number(nextRecord.pendidikan_sd);
+        const smp = Number(nextRecord.pendidikan_smp);
+        const sma = Number(nextRecord.pendidikan_sma);
 
         if (tahun < 1900 || tahun > 2100) {
           validationError = "Tahun monografi harus valid (antara tahun 1900 dan 2100).";
@@ -349,13 +384,23 @@ export default function AdminPanel() {
           kk < 0 ||
           dusun < 0 ||
           rt < 0 ||
-          rw < 0
+          rw < 0 ||
+          anak < 0 ||
+          balita < 0 ||
+          paud < 0 ||
+          sd < 0 ||
+          smp < 0 ||
+          sma < 0
         ) {
           validationError = "Semua data angka monografi tidak boleh bernilai negatif.";
         } else if (laki + perempuan !== totalPenduduk) {
           validationError = `Jumlah penduduk laki-laki (${laki}) ditambah perempuan (${perempuan}) harus sama dengan total jumlah penduduk (${totalPenduduk}).`;
         } else if (kk > totalPenduduk) {
           validationError = "Jumlah Kepala Keluarga (KK) tidak boleh melebihi total jumlah penduduk.";
+        } else if (anak + balita > totalPenduduk) {
+          validationError = "Jumlah anak dan balita tidak boleh melebihi total jumlah penduduk.";
+        } else if (paud + sd + smp + sma > totalPenduduk) {
+          validationError = "Jumlah warga berdasarkan tingkat pendidikan tidak boleh melebihi total jumlah penduduk.";
         }
       }
     }
@@ -377,32 +422,50 @@ export default function AdminPanel() {
           : slugify(submittedSlug) || fallbackSlug;
     }
 
-    const { id, ...payload } = nextRecord;
+    const executeSubmit = async () => {
+      const { id, ...payload } = nextRecord;
 
-    try {
-      if (id === emptyId) {
-        await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
-          method: "POST",
-          body: payload,
-        });
-      } else {
-        await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
-          method: "PATCH",
-          query: `?id=eq.${id}`,
-          body: payload,
-        });
+      try {
+        if (id === emptyId) {
+          await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+            method: "POST",
+            body: payload,
+          });
+        } else {
+          await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+            method: "PATCH",
+            query: `?id=eq.${id}`,
+            body: payload,
+          });
+        }
+
+        await reloadRows();
+        setEditing(null);
+        setImageDrafts({});
+        setStatusMessage("Data berhasil disimpan ke Supabase.");
+        setStatusType("success");
+        form.reset();
+      } catch (error) {
+        setStatusMessage(`Data gagal disimpan: ${getErrorMessage(error)}`);
+        setStatusType("error");
       }
+    };
 
-      await reloadRows();
-      setEditing(null);
-      setImageDrafts({});
-      setStatusMessage("Data berhasil disimpan ke Supabase.");
-      setStatusType("success");
-      form.reset();
-    } catch (error) {
-      setStatusMessage(`Data gagal disimpan: ${getErrorMessage(error)}`);
-      setStatusType("error");
-    }
+    const isEdit = formRecord.id !== emptyId;
+    const titleVal = String(nextRecord[activeResource.titleField] ?? "");
+
+    setConfirmModal({
+      isOpen: true,
+      type: isEdit ? "edit" : "add",
+      title: isEdit ? "Konfirmasi Simpan Perubahan" : "Konfirmasi Tambah Data",
+      message: isEdit
+        ? `Apakah Anda yakin ingin menyimpan perubahan pada data "${titleVal}"?`
+        : `Apakah Anda yakin ingin menambahkan data baru "${titleVal}"?`,
+      onConfirm: () => {
+        executeSubmit();
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+      },
+    });
   };
 
   const handleDelete = async (id: number) => {
@@ -422,17 +485,26 @@ export default function AdminPanel() {
     }
   };
 
-  const handleReset = async () => {
-    try {
-      await reloadRows();
-      setEditing(null);
-      setImageDrafts({});
-      setStatusMessage("Data terbaru berhasil dimuat dari Supabase.");
-      setStatusType("success");
-    } catch (error) {
-      setStatusMessage(`Data gagal dimuat ulang: ${getErrorMessage(error)}`);
-      setStatusType("error");
-    }
+  const handleReset = () => {
+    setConfirmModal({
+      isOpen: true,
+      type: "reset",
+      title: "Konfirmasi Muat Ulang Data",
+      message: "Apakah Anda yakin ingin memuat ulang data? Semua perubahan yang belum disimpan pada form akan dibatalkan.",
+      onConfirm: async () => {
+        try {
+          await reloadRows();
+          setEditing(null);
+          setImageDrafts({});
+          setStatusMessage("Data terbaru berhasil dimuat dari Supabase.");
+          setStatusType("success");
+        } catch (error) {
+          setStatusMessage(`Data gagal dimuat ulang: ${getErrorMessage(error)}`);
+          setStatusType("error");
+        }
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+      },
+    });
   };
 
   const selectResource = (resourceKey: string) => {
@@ -614,8 +686,20 @@ export default function AdminPanel() {
                       Edit
                     </button>
                     <button
-                      className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white"
-                      onClick={() => handleDelete(row.id)}
+                      className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
+                      onClick={() => {
+                        const rowTitle = String(row[activeResource.titleField] ?? row.id);
+                        setConfirmModal({
+                          isOpen: true,
+                          type: "delete",
+                          title: "Konfirmasi Hapus Data",
+                          message: `Apakah Anda yakin ingin menghapus data "${rowTitle}"? Tindakan ini tidak dapat dibatalkan.`,
+                          onConfirm: () => {
+                            handleDelete(row.id);
+                            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                          },
+                        });
+                      }}
                       type="button"
                     >
                       Hapus
@@ -627,6 +711,69 @@ export default function AdminPanel() {
           </section>
         </div>
       </section>
+
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md overflow-hidden rounded-xl border border-[#d8d1c0] bg-white p-6 shadow-xl animate-scale-up">
+            <div className="flex items-start gap-4">
+              {confirmModal.type === "delete" ? (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600 border border-red-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+              ) : confirmModal.type === "edit" ? (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 border border-amber-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+              ) : confirmModal.type === "reset" ? (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18" />
+                  </svg>
+                </div>
+              ) : (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[#697a36] border border-emerald-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+              )}
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-[#1e2c26] leading-none">{confirmModal.title}</h3>
+                <p className="text-sm leading-relaxed text-[#5b6b63]">{confirmModal.message}</p>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end gap-3 border-t border-[#f0ece3] pt-4">
+              <button
+                className="rounded-md border border-[#d8d1c0] bg-white px-4 py-2 text-sm font-semibold text-[#1e2c26] hover:bg-[#f6f3ec] transition cursor-pointer"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                type="button"
+              >
+                Batal
+              </button>
+              <button
+                className={`rounded-md px-4 py-2 text-sm font-semibold text-white transition cursor-pointer ${
+                  confirmModal.type === "delete"
+                    ? "bg-red-700 hover:bg-red-800"
+                    : confirmModal.type === "edit"
+                    ? "bg-[#697a36] hover:bg-[#5b6b30]"
+                    : confirmModal.type === "reset"
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-[#1b352c] hover:bg-[#142821]"
+                }`}
+                onClick={confirmModal.onConfirm}
+                type="button"
+              >
+                {confirmModal.type === "delete" ? "Ya, Hapus" : confirmModal.type === "edit" ? "Ya, Simpan" : confirmModal.type === "reset" ? "Ya, Muat Ulang" : "Ya, Tambah"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

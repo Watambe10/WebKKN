@@ -41,6 +41,22 @@ export type MonografiDesa = {
   jumlah_rw: number;
   luas_wilayah: string;
   keterangan: string;
+  jumlah_anak: number;
+  jumlah_balita: number;
+  pendidikan_paud: number;
+  pendidikan_sd: number;
+  pendidikan_smp: number;
+  pendidikan_sma: number;
+  ketua_rt_1: string;
+  ketua_rt_2: string;
+  ketua_rt_3: string;
+  ketua_rt_4: string;
+  ketua_rt_5: string;
+  ketua_rt_6: string;
+  ketua_rw_1: string;
+  ketua_rw_2: string;
+  ketua_rw_3: string;
+  peta_wilayah: string;
 };
 
 export const desa = {
@@ -61,10 +77,26 @@ export const initialMonografiDesa: MonografiDesa[] = [
     jumlah_perempuan: 630,
     jumlah_kk: 380,
     jumlah_dusun: 1,
-    jumlah_rt: 8,
-    jumlah_rw: 2,
+    jumlah_rt: 6,
+    jumlah_rw: 3,
     luas_wilayah: "1,45 km2",
     keterangan: "Data monografi semester I tahun 2026 untuk wilayah Padukuhan Plasan.",
+    jumlah_anak: 250,
+    jumlah_balita: 120,
+    pendidikan_paud: 80,
+    pendidikan_sd: 220,
+    pendidikan_smp: 180,
+    pendidikan_sma: 240,
+    ketua_rt_1: "Budi Santoso",
+    ketua_rt_2: "Ahmad Dahlan",
+    ketua_rt_3: "Siti Rahma",
+    ketua_rt_4: "Joko Widodo",
+    ketua_rt_5: "Sri Mulyani",
+    ketua_rt_6: "Andi Wijaya",
+    ketua_rw_1: "Heri Prasetyo",
+    ketua_rw_2: "Suryono",
+    ketua_rw_3: "Hartono",
+    peta_wilayah: "",
   },
   {
     id: 2,
@@ -74,10 +106,26 @@ export const initialMonografiDesa: MonografiDesa[] = [
     jumlah_perempuan: 623,
     jumlah_kk: 375,
     jumlah_dusun: 1,
-    jumlah_rt: 8,
-    jumlah_rw: 2,
+    jumlah_rt: 6,
+    jumlah_rw: 3,
     luas_wilayah: "1,45 km2",
     keterangan: "Rekapitulasi data kependudukan akhir tahun 2025.",
+    jumlah_anak: 240,
+    jumlah_balita: 115,
+    pendidikan_paud: 75,
+    pendidikan_sd: 215,
+    pendidikan_smp: 175,
+    pendidikan_sma: 235,
+    ketua_rt_1: "Budi Santoso",
+    ketua_rt_2: "Ahmad Dahlan",
+    ketua_rt_3: "Siti Rahma",
+    ketua_rt_4: "Joko Widodo",
+    ketua_rt_5: "Sri Mulyani",
+    ketua_rt_6: "Andi Wijaya",
+    ketua_rw_1: "Heri Prasetyo",
+    ketua_rw_2: "Suryono",
+    ketua_rw_3: "Hartono",
+    peta_wilayah: "",
   },
   {
     id: 3,
@@ -87,10 +135,26 @@ export const initialMonografiDesa: MonografiDesa[] = [
     jumlah_perempuan: 612,
     jumlah_kk: 368,
     jumlah_dusun: 1,
-    jumlah_rt: 8,
-    jumlah_rw: 2,
+    jumlah_rt: 6,
+    jumlah_rw: 3,
     luas_wilayah: "1,45 km2",
     keterangan: "Data dasar awal perencanaan pembangunan wilayah padukuhan.",
+    jumlah_anak: 230,
+    jumlah_balita: 110,
+    pendidikan_paud: 70,
+    pendidikan_sd: 210,
+    pendidikan_smp: 170,
+    pendidikan_sma: 220,
+    ketua_rt_1: "Budi Santoso",
+    ketua_rt_2: "Ahmad Dahlan",
+    ketua_rt_3: "Siti Rahma",
+    ketua_rt_4: "Joko Widodo",
+    ketua_rt_5: "Sri Mulyani",
+    ketua_rt_6: "Andi Wijaya",
+    ketua_rw_1: "Heri Prasetyo",
+    ketua_rw_2: "Suryono",
+    ketua_rw_3: "Hartono",
+    peta_wilayah: "",
   },
 ];
 
