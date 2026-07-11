@@ -96,7 +96,7 @@ export const initialMonografiDesa: MonografiDesa[] = [
     ketua_rw_1: "Heri Prasetyo",
     ketua_rw_2: "Suryono",
     ketua_rw_3: "Hartono",
-    peta_wilayah: "",
+    peta_wilayah: "/peta-plasan.png",
   },
   {
     id: 2,
@@ -125,7 +125,7 @@ export const initialMonografiDesa: MonografiDesa[] = [
     ketua_rw_1: "Heri Prasetyo",
     ketua_rw_2: "Suryono",
     ketua_rw_3: "Hartono",
-    peta_wilayah: "",
+    peta_wilayah: "/peta-plasan.png",
   },
   {
     id: 3,
@@ -154,7 +154,7 @@ export const initialMonografiDesa: MonografiDesa[] = [
     ketua_rw_1: "Heri Prasetyo",
     ketua_rw_2: "Suryono",
     ketua_rw_3: "Hartono",
-    peta_wilayah: "",
+    peta_wilayah: "/peta-plasan.png",
   },
 ];
 

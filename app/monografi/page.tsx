@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AdminLoginButton from "../components/AdminLoginButton";
+import MapViewer from "../components/MapViewer";
 import { desa, formatNumber, initialMonografiDesa, MonografiDesa } from "../lib/data";
 import { getSupabaseRows } from "../lib/supabase";
 
@@ -117,25 +118,10 @@ export default async function MonografiPage() {
             <h3 className="text-lg font-bold text-[#1e2c26] font-serif mb-2">Peta Wilayah</h3>
             <p className="text-sm text-[#5b6b63] mb-6">Peta administratif batas wilayah {desa.nama}.</p>
             
-            <div className="relative overflow-hidden rounded-lg border border-[#e7e1d3] bg-[#fbfaf6] flex-grow flex items-center justify-center min-h-[320px]">
-              {monografiTerbaru.peta_wilayah ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img 
-                  src={monografiTerbaru.peta_wilayah} 
-                  alt="Peta Wilayah Padukuhan Plasan" 
-                  className="max-h-[420px] w-auto object-contain transition-transform duration-500 hover:scale-105"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center p-8 text-center text-[#8e8570]">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 text-[#b9b094] mb-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8m-9-10.5a.75.75 0 01.75-.75h7.5a.75.75 0 01.75.75v11.25a.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V5.25z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12h19.5M12 2.25v19.5" />
-                  </svg>
-                  <p className="font-bold text-[#5b6b63]">Gambar Peta Belum Tersedia</p>
-                  <p className="text-xs mt-1 text-[#8e8570] max-w-sm">Gambar peta wilayah belum diunggah. Pengurus dapat mengunggah gambar peta melalui Panel Admin pada halaman Monografi.</p>
-                </div>
-              )}
-            </div>
+            <MapViewer 
+              src={monografiTerbaru.peta_wilayah} 
+              alt="Peta Wilayah Padukuhan Plasan" 
+            />
           </div>
         </div>
 
@@ -340,7 +326,7 @@ export default async function MonografiPage() {
                     <td className="px-5 py-4 text-[#5b6b63]">{item.jumlah_rt}</td>
                     <td className="px-5 py-4 text-[#5b6b63]">{item.jumlah_rw}</td>
                     <td className="px-5 py-4 text-[#5b6b63]">{item.luas_wilayah}</td>
-                    <td className="px-5 py-4 text-[#5b6b63] max-w-xs truncate" title={item.keterangan}>{item.keterangan}</td>
+                    <td className="px-5 py-4 text-[#5b6b63] max-w-xs whitespace-normal break-words" title={item.keterangan}>{item.keterangan}</td>
                   </tr>
                 ))}
               </tbody>
