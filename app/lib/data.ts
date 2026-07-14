@@ -36,17 +36,21 @@ export type MonografiDesa = {
   jumlah_laki_laki: number;
   jumlah_perempuan: number;
   jumlah_kk: number;
-  jumlah_dusun: number;
+  jumlah_dusun?: number;
   jumlah_rt: number;
   jumlah_rw: number;
   luas_wilayah: string;
   keterangan: string;
   jumlah_anak: number;
   jumlah_balita: number;
+  jumlah_lansia?: number;
   pendidikan_paud: number;
+  pendidikan_tk?: number;
   pendidikan_sd: number;
   pendidikan_smp: number;
   pendidikan_sma: number;
+  pendidikan_sarjana?: number;
+  nama_kepala_dusun?: string;
   ketua_rt_1: string;
   ketua_rt_2: string;
   ketua_rt_3: string;
@@ -54,9 +58,27 @@ export type MonografiDesa = {
   ketua_rt_5: string;
   ketua_rt_6: string;
   ketua_rw_1: string;
-  ketua_rw_2: string;
-  ketua_rw_3: string;
+  ketua_rw_2?: string;
+  ketua_rw_3?: string;
   peta_wilayah: string;
+};
+
+export type PengaturanDesa = {
+  id: number;
+  nama: string;
+  nama_singkat: string;
+  kecamatan: string;
+  kabupaten: string;
+  email: string;
+  telepon: string;
+  hero_judul: string;
+  hero_deskripsi: string;
+  profil_judul: string;
+  profil_deskripsi: string;
+  profil_kategori_1: string;
+  profil_kategori_2: string;
+  profil_kategori_3: string;
+  hero_bg_media?: string;
 };
 
 export const desa = {
@@ -68,25 +90,47 @@ export const desa = {
   telepon: "(021) 1234 5678",
 };
 
+export const initialPengaturan: PengaturanDesa = {
+  id: 1,
+  nama: "Padukuhan Plasan",
+  nama_singkat: "Plasan",
+  kecamatan: "Kecamatan Sejahtera",
+  kabupaten: "Kabupaten Nusantara",
+  email: "padukuhan@plasan.desa.id",
+  telepon: "(021) 1234 5678",
+  hero_judul: "Padukuhan Plasan",
+  hero_deskripsi: "Pusat informasi profil wilayah, pelayanan publik, berita, kegiatan, galeri, dan monografi Plasan yang tersaji transparan untuk warga.",
+  profil_judul: "Ruang hidup warga Plasan yang bertumbuh lewat gotong royong.",
+  profil_deskripsi: "Padukuhan Plasan merupakan wilayah agraris dengan potensi pertanian yang subur, UMKM rumah tangga yang produktif, kelembagaan warga yang solid, dan ruang kerukunan sosial yang kuat. Website ini dirancang sebagai pintu gerbang informasi resmi dan pelayanan publik bagi seluruh warga.",
+  profil_kategori_1: "Pelayanan Administrasi",
+  profil_kategori_2: "Informasi Pembangunan",
+  profil_kategori_3: "Potensi Padukuhan",
+  hero_bg_media: "/hero-desa.png",
+};
+
 export const initialMonografiDesa: MonografiDesa[] = [
   {
     id: 1,
-    tahun: 2026,
-    jumlah_penduduk: 1250,
-    jumlah_laki_laki: 620,
-    jumlah_perempuan: 630,
-    jumlah_kk: 380,
+    tahun: 2027,
+    jumlah_penduduk: 1270,
+    jumlah_laki_laki: 630,
+    jumlah_perempuan: 640,
+    jumlah_kk: 388,
     jumlah_dusun: 1,
     jumlah_rt: 6,
-    jumlah_rw: 3,
+    jumlah_rw: 1,
     luas_wilayah: "1,45 km2",
-    keterangan: "Data monografi semester I tahun 2026 untuk wilayah Padukuhan Plasan.",
-    jumlah_anak: 250,
-    jumlah_balita: 120,
-    pendidikan_paud: 80,
-    pendidikan_sd: 220,
-    pendidikan_smp: 180,
-    pendidikan_sma: 240,
+    keterangan: "Data monografi proyeksi semester I tahun 2027 untuk wilayah Padukuhan Plasan.",
+    jumlah_anak: 260,
+    jumlah_balita: 125,
+    jumlah_lansia: 145,
+    pendidikan_paud: 85,
+    pendidikan_tk: 75,
+    pendidikan_sd: 225,
+    pendidikan_smp: 185,
+    pendidikan_sma: 245,
+    pendidikan_sarjana: 100,
+    nama_kepala_dusun: "Sunardi",
     ketua_rt_1: "Budi Santoso",
     ketua_rt_2: "Ahmad Dahlan",
     ketua_rt_3: "Siti Rahma",
@@ -100,22 +144,26 @@ export const initialMonografiDesa: MonografiDesa[] = [
   },
   {
     id: 2,
-    tahun: 2025,
-    jumlah_penduduk: 1235,
-    jumlah_laki_laki: 612,
-    jumlah_perempuan: 623,
-    jumlah_kk: 375,
+    tahun: 2026,
+    jumlah_penduduk: 1250,
+    jumlah_laki_laki: 620,
+    jumlah_perempuan: 630,
+    jumlah_kk: 380,
     jumlah_dusun: 1,
     jumlah_rt: 6,
-    jumlah_rw: 3,
+    jumlah_rw: 1,
     luas_wilayah: "1,45 km2",
-    keterangan: "Rekapitulasi data kependudukan akhir tahun 2025.",
-    jumlah_anak: 240,
-    jumlah_balita: 115,
-    pendidikan_paud: 75,
-    pendidikan_sd: 215,
-    pendidikan_smp: 175,
-    pendidikan_sma: 235,
+    keterangan: "Data monografi semester I tahun 2026 untuk wilayah Padukuhan Plasan.",
+    jumlah_anak: 250,
+    jumlah_balita: 120,
+    jumlah_lansia: 140,
+    pendidikan_paud: 80,
+    pendidikan_tk: 70,
+    pendidikan_sd: 220,
+    pendidikan_smp: 180,
+    pendidikan_sma: 240,
+    pendidikan_sarjana: 95,
+    nama_kepala_dusun: "Sunardi",
     ketua_rt_1: "Budi Santoso",
     ketua_rt_2: "Ahmad Dahlan",
     ketua_rt_3: "Siti Rahma",
@@ -129,6 +177,39 @@ export const initialMonografiDesa: MonografiDesa[] = [
   },
   {
     id: 3,
+    tahun: 2025,
+    jumlah_penduduk: 1235,
+    jumlah_laki_laki: 612,
+    jumlah_perempuan: 623,
+    jumlah_kk: 375,
+    jumlah_dusun: 1,
+    jumlah_rt: 6,
+    jumlah_rw: 1,
+    luas_wilayah: "1,45 km2",
+    keterangan: "Rekapitulasi data kependudukan akhir tahun 2025.",
+    jumlah_anak: 240,
+    jumlah_balita: 115,
+    jumlah_lansia: 135,
+    pendidikan_paud: 75,
+    pendidikan_tk: 65,
+    pendidikan_sd: 215,
+    pendidikan_smp: 175,
+    pendidikan_sma: 235,
+    pendidikan_sarjana: 90,
+    nama_kepala_dusun: "Sunardi",
+    ketua_rt_1: "Budi Santoso",
+    ketua_rt_2: "Ahmad Dahlan",
+    ketua_rt_3: "Siti Rahma",
+    ketua_rt_4: "Joko Widodo",
+    ketua_rt_5: "Sri Mulyani",
+    ketua_rt_6: "Andi Wijaya",
+    ketua_rw_1: "Heri Prasetyo",
+    ketua_rw_2: "Suryono",
+    ketua_rw_3: "Hartono",
+    peta_wilayah: "/peta-plasan.png",
+  },
+  {
+    id: 4,
     tahun: 2024,
     jumlah_penduduk: 1210,
     jumlah_laki_laki: 598,
@@ -136,15 +217,52 @@ export const initialMonografiDesa: MonografiDesa[] = [
     jumlah_kk: 368,
     jumlah_dusun: 1,
     jumlah_rt: 6,
-    jumlah_rw: 3,
+    jumlah_rw: 1,
     luas_wilayah: "1,45 km2",
     keterangan: "Data dasar awal perencanaan pembangunan wilayah padukuhan.",
     jumlah_anak: 230,
     jumlah_balita: 110,
+    jumlah_lansia: 130,
     pendidikan_paud: 70,
+    pendidikan_tk: 60,
     pendidikan_sd: 210,
     pendidikan_smp: 170,
     pendidikan_sma: 220,
+    pendidikan_sarjana: 85,
+    nama_kepala_dusun: "Sunardi",
+    ketua_rt_1: "Budi Santoso",
+    ketua_rt_2: "Ahmad Dahlan",
+    ketua_rt_3: "Siti Rahma",
+    ketua_rt_4: "Joko Widodo",
+    ketua_rt_5: "Sri Mulyani",
+    ketua_rt_6: "Andi Wijaya",
+    ketua_rw_1: "Heri Prasetyo",
+    ketua_rw_2: "Suryono",
+    ketua_rw_3: "Hartono",
+    peta_wilayah: "/peta-plasan.png",
+  },
+  {
+    id: 5,
+    tahun: 2023,
+    jumlah_penduduk: 1195,
+    jumlah_laki_laki: 590,
+    jumlah_perempuan: 605,
+    jumlah_kk: 360,
+    jumlah_dusun: 1,
+    jumlah_rt: 6,
+    jumlah_rw: 1,
+    luas_wilayah: "1,45 km2",
+    keterangan: "Rekapitulasi data kependudukan akhir tahun 2023.",
+    jumlah_anak: 225,
+    jumlah_balita: 105,
+    jumlah_lansia: 125,
+    pendidikan_paud: 65,
+    pendidikan_tk: 55,
+    pendidikan_sd: 205,
+    pendidikan_smp: 165,
+    pendidikan_sma: 215,
+    pendidikan_sarjana: 80,
+    nama_kepala_dusun: "Mulyono",
     ketua_rt_1: "Budi Santoso",
     ketua_rt_2: "Ahmad Dahlan",
     ketua_rt_3: "Siti Rahma",

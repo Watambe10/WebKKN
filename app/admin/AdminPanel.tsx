@@ -9,12 +9,13 @@ import {
   initialGallery,
   initialKegiatan,
   initialMonografiDesa,
+  initialPengaturan,
 } from "../lib/data";
 import { supabaseRequest } from "../lib/supabase";
 
 type AdminRecord = {
   id: number;
-  [key: string]: string | number;
+  [key: string]: string | number | null;
 };
 
 type FieldConfig = {
@@ -50,10 +51,10 @@ const resources: ResourceConfig[] = [
     fields: [
       { name: "judul", label: "Judul", required: true },
       { name: "slug", label: "Slug" },
-      { name: "isi", label: "Isi", type: "textarea", required: true },
-      { name: "gambar", label: "Gambar", type: "image", required: true },
-      { name: "penulis", label: "Penulis", required: true },
-      { name: "tanggal_publish", label: "Tanggal Publish", type: "date", required: true },
+      { name: "isi", label: "Isi", type: "textarea", required: false },
+      { name: "gambar", label: "Gambar", type: "image", required: false },
+      { name: "penulis", label: "Penulis", required: false },
+      { name: "tanggal_publish", label: "Tanggal Publish", type: "date", required: false },
     ],
   },
   {
@@ -67,12 +68,12 @@ const resources: ResourceConfig[] = [
     fields: [
       { name: "nama_kegiatan", label: "Nama Kegiatan", required: true },
       { name: "slug", label: "Slug" },
-      { name: "deskripsi", label: "Deskripsi", type: "textarea", required: true },
-      { name: "tanggal_mulai", label: "Tanggal Mulai", type: "date", required: true },
-      { name: "tanggal_selesai", label: "Tanggal Selesai", type: "date", required: true },
-      { name: "waktu_mulai", label: "Waktu Mulai", type: "time", required: true },
-      { name: "waktu_selesai", label: "Waktu Selesai", type: "time", required: true },
-      { name: "gambar", label: "Gambar", type: "image", required: true },
+      { name: "deskripsi", label: "Deskripsi", type: "textarea", required: false },
+      { name: "tanggal_mulai", label: "Tanggal Mulai", type: "date", required: false },
+      { name: "tanggal_selesai", label: "Tanggal Selesai", type: "date", required: false },
+      { name: "waktu_mulai", label: "Waktu Mulai", type: "time", required: false },
+      { name: "waktu_selesai", label: "Waktu Selesai", type: "time", required: false },
+      { name: "gambar", label: "Gambar", type: "image", required: false },
     ],
   },
   {
@@ -85,47 +86,73 @@ const resources: ResourceConfig[] = [
     titleField: "judul",
     fields: [
       { name: "judul", label: "Judul", required: true },
-      { name: "deskripsi", label: "Deskripsi", type: "textarea", required: true },
-      { name: "gambar", label: "Gambar", type: "image", required: true },
-      { name: "kategori", label: "Kategori", required: true },
-      { name: "tanggal_upload", label: "Tanggal Upload", type: "date", required: true },
+      { name: "deskripsi", label: "Deskripsi", type: "textarea", required: false },
+      { name: "gambar", label: "Gambar", type: "image", required: false },
+      { name: "kategori", label: "Kategori", required: false },
+      { name: "tanggal_upload", label: "Tanggal Upload", type: "date", required: false },
     ],
   },
   {
     key: "monografi",
     label: "Monografi",
-    description: "Kelola data penduduk dan wilayah berdasarkan tahun.",
+    description: "Kelola data penduduk, pimpinan, kelompok usia, tingkat pendidikan, dan wilayah berdasarkan tahun.",
     initialData: initialMonografiDesa as unknown as AdminRecord[],
     orderBy: "tahun",
     tableName: "monografi_desa",
     titleField: "tahun",
     fields: [
       { name: "tahun", label: "Tahun", type: "number", required: true },
-      { name: "jumlah_penduduk", label: "Jumlah Penduduk", type: "number", required: true },
-      { name: "jumlah_laki_laki", label: "Jumlah Laki-laki", type: "number", required: true },
-      { name: "jumlah_perempuan", label: "Jumlah Perempuan", type: "number", required: true },
-      { name: "jumlah_kk", label: "Jumlah KK", type: "number", required: true },
-      { name: "jumlah_dusun", label: "Jumlah Dusun", type: "number", required: true },
-      { name: "jumlah_rt", label: "Jumlah RT", type: "number", required: true },
-      { name: "jumlah_rw", label: "Jumlah RW", type: "number", required: true },
-      { name: "luas_wilayah", label: "Luas Wilayah", required: true },
-      { name: "jumlah_anak", label: "Jumlah Anak", type: "number", required: true },
-      { name: "jumlah_balita", label: "Jumlah Balita", type: "number", required: true },
-      { name: "pendidikan_paud", label: "Pendidikan PAUD", type: "number", required: true },
-      { name: "pendidikan_sd", label: "Pendidikan SD", type: "number", required: true },
-      { name: "pendidikan_smp", label: "Pendidikan SMP", type: "number", required: true },
-      { name: "pendidikan_sma", label: "Pendidikan SMA", type: "number", required: true },
-      { name: "ketua_rt_1", label: "Ketua RT 1", required: true },
-      { name: "ketua_rt_2", label: "Ketua RT 2", required: true },
-      { name: "ketua_rt_3", label: "Ketua RT 3", required: true },
-      { name: "ketua_rt_4", label: "Ketua RT 4", required: true },
-      { name: "ketua_rt_5", label: "Ketua RT 5", required: true },
-      { name: "ketua_rt_6", label: "Ketua RT 6", required: true },
-      { name: "ketua_rw_1", label: "Ketua RW 1 (RT 1, 2)", required: true },
-      { name: "ketua_rw_2", label: "Ketua RW 2 (RT 3, 4)", required: true },
-      { name: "ketua_rw_3", label: "Ketua RW 3 (RT 5, 6)", required: true },
+      { name: "nama_kepala_dusun", label: "Nama Kepala Dusun (Dukuh)", required: false },
+      { name: "jumlah_penduduk", label: "Jumlah Penduduk", type: "number", required: false },
+      { name: "jumlah_laki_laki", label: "Jumlah Laki-laki", type: "number", required: false },
+      { name: "jumlah_perempuan", label: "Jumlah Perempuan", type: "number", required: false },
+      { name: "jumlah_kk", label: "Jumlah KK", type: "number", required: false },
+      { name: "jumlah_rt", label: "Jumlah RT", type: "number", required: false },
+      { name: "jumlah_rw", label: "Jumlah RW", type: "number", required: false },
+      { name: "luas_wilayah", label: "Luas Wilayah", required: false },
+      { name: "jumlah_balita", label: "Jumlah Balita (0-5 tahun)", type: "number", required: false },
+      { name: "jumlah_anak", label: "Jumlah Anak-anak (6-17 tahun)", type: "number", required: false },
+      { name: "jumlah_lansia", label: "Jumlah Lansia (>=60 tahun)", type: "number", required: false },
+      { name: "pendidikan_paud", label: "Pendidikan PAUD", type: "number", required: false },
+      { name: "pendidikan_tk", label: "Pendidikan TK", type: "number", required: false },
+      { name: "pendidikan_sd", label: "Pendidikan SD", type: "number", required: false },
+      { name: "pendidikan_smp", label: "Pendidikan SMP", type: "number", required: false },
+      { name: "pendidikan_sma", label: "Pendidikan SMA", type: "number", required: false },
+      { name: "pendidikan_sarjana", label: "Pendidikan Sarjana", type: "number", required: false },
+      { name: "ketua_rw_1", label: "Ketua RW", required: false },
+      { name: "ketua_rt_1", label: "Ketua RT 1", required: false },
+      { name: "ketua_rt_2", label: "Ketua RT 2", required: false },
+      { name: "ketua_rt_3", label: "Ketua RT 3", required: false },
+      { name: "ketua_rt_4", label: "Ketua RT 4", required: false },
+      { name: "ketua_rt_5", label: "Ketua RT 5", required: false },
+      { name: "ketua_rt_6", label: "Ketua RT 6", required: false },
       { name: "peta_wilayah", label: "Peta Wilayah (Gambar)", type: "image", required: false },
-      { name: "keterangan", label: "Keterangan", type: "textarea", required: true },
+      { name: "keterangan", label: "Keterangan", type: "textarea", required: false },
+    ],
+  },
+  {
+    key: "pengaturan",
+    label: "Pengaturan Desa",
+    description: "Kelola teks umum website, judul, deskripsi, informasi kontak, dan profile.",
+    initialData: [initialPengaturan] as unknown as AdminRecord[],
+    orderBy: "id",
+    tableName: "pengaturan_desa",
+    titleField: "nama",
+    fields: [
+      { name: "nama", label: "Nama Padukuhan", required: true },
+      { name: "nama_singkat", label: "Nama Singkat", required: false },
+      { name: "kecamatan", label: "Kecamatan", required: false },
+      { name: "kabupaten", label: "Kabupaten", required: false },
+      { name: "email", label: "Email Kontak", required: false },
+      { name: "telepon", label: "Telepon Kontak", required: false },
+      { name: "hero_judul", label: "Judul Hero", required: false },
+      { name: "hero_deskripsi", label: "Deskripsi Hero", type: "textarea", required: false },
+      { name: "hero_bg_media", label: "Media Background Hero (Gambar atau Video)", type: "image", required: false },
+      { name: "profil_judul", label: "Judul Profil", required: false },
+      { name: "profil_deskripsi", label: "Deskripsi Profil", type: "textarea", required: false },
+      { name: "profil_kategori_1", label: "Kategori Profil 1", required: false },
+      { name: "profil_kategori_2", label: "Kategori Profil 2", required: false },
+      { name: "profil_kategori_3", label: "Kategori Profil 3", required: false },
     ],
   },
 ];
@@ -181,7 +208,6 @@ const slugify = (value: string) =>
 export default function AdminPanel() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(loadSession);
-  const [loginError, setLoginError] = useState("");
   const [activeKey, setActiveKey] = useState(resources[0].key);
   const [data, setData] = useState<Record<string, AdminRecord[]>>(loadData);
   const [editing, setEditing] = useState<AdminRecord | null>(null);
@@ -224,19 +250,30 @@ export default function AdminPanel() {
     let ignore = false;
 
     supabaseRequest<AdminRecord[]>(activeResource.tableName, {
-      query: `?select=*&order=${activeResource.orderBy}.desc`,
+      query: activeResource.key === "pengaturan" ? "?select=*" : `?select=*&order=${activeResource.orderBy}.desc`,
     })
       .then((rows) => {
         if (!ignore) {
           setData((current) => ({ ...current, [activeResource.key]: rows }));
           setStatusMessage("");
           setStatusType("");
+          if (activeResource.key === "pengaturan") {
+            setEditing(rows.length ? rows[0] : { ...initialPengaturan } as unknown as AdminRecord);
+          }
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (!ignore) {
-          setStatusMessage("Data belum bisa dimuat dari Supabase. Cek env, tabel, atau policy Supabase.");
+          const errMsg = error instanceof Error ? error.message : String(error);
+          if (errMsg.includes("PGRST205") || errMsg.includes("Could not find the table")) {
+            setStatusMessage(`Tabel '${activeResource.tableName}' belum dibuat di Supabase. Silakan salin & jalankan script SQL dari file 'supabase_schema.sql' di SQL Editor Dashboard Supabase Anda.`);
+          } else {
+            setStatusMessage(`Gagal memuat data dari Supabase: ${errMsg}`);
+          }
           setStatusType("error");
+          if (activeResource.key === "pengaturan") {
+            setEditing({ ...initialPengaturan } as unknown as AdminRecord);
+          }
         }
       });
 
@@ -251,7 +288,7 @@ export default function AdminPanel() {
 
   const reloadRows = async () => {
     const rows = await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
-      query: `?select=*&order=${activeResource.orderBy}.desc`,
+      query: activeResource.key === "pengaturan" ? "?select=*" : `?select=*&order=${activeResource.orderBy}.desc`,
     });
     saveRows(activeResource.key, rows);
   };
@@ -263,22 +300,6 @@ export default function AdminPanel() {
 
     const imageData = await readImageFile(file);
     setImageDrafts((current) => ({ ...current, [fieldName]: imageData }));
-  };
-
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const username = String(formData.get("username"));
-    const password = String(formData.get("password"));
-
-    if (username === "admin" && password === "plasan123") {
-      window.localStorage.setItem(`${storagePrefix}-session`, "true");
-      setIsAuthenticated(true);
-      setLoginError("");
-      return;
-    }
-
-    setLoginError("Username atau password tidak sesuai.");
   };
 
   const handleLogout = () => {
@@ -296,12 +317,17 @@ export default function AdminPanel() {
     activeResource.fields.forEach((field) => {
       if (field.type === "image") {
         const currentImage = String(formRecord[field.name] ?? "");
-        nextRecord[field.name] = imageDrafts[field.name] || currentImage;
+        const finalImg = imageDrafts[field.name] || currentImage;
+        nextRecord[field.name] = finalImg === "" ? null : finalImg;
         return;
       }
 
       const rawValue = String(formData.get(field.name) ?? "");
-      nextRecord[field.name] = field.type === "number" ? Number(rawValue) : rawValue;
+      if (rawValue.trim() === "") {
+        nextRecord[field.name] = null;
+      } else {
+        nextRecord[field.name] = field.type === "number" ? Number(rawValue) : rawValue;
+      }
     });
 
     // Validasi Form
@@ -329,51 +355,55 @@ export default function AdminPanel() {
     // 2. Validasi format spesifik sesuai dengan jenis data
     if (!validationError) {
       if (activeResource.key === "berita") {
-        if (String(nextRecord.judul).trim().length < 3) {
+        if (nextRecord.judul && String(nextRecord.judul).trim().length < 3) {
           validationError = "Judul berita minimal harus terdiri dari 3 karakter.";
-        } else if (String(nextRecord.isi).trim().length < 10) {
+        } else if (nextRecord.isi && String(nextRecord.isi).trim().length < 10) {
           validationError = "Isi berita minimal harus terdiri dari 10 karakter.";
         }
       } else if (activeResource.key === "kegiatan") {
-        if (String(nextRecord.nama_kegiatan).trim().length < 3) {
+        if (nextRecord.nama_kegiatan && String(nextRecord.nama_kegiatan).trim().length < 3) {
           validationError = "Nama kegiatan minimal harus terdiri dari 3 karakter.";
-        } else if (String(nextRecord.deskripsi).trim().length < 10) {
+        } else if (nextRecord.deskripsi && String(nextRecord.deskripsi).trim().length < 10) {
           validationError = "Deskripsi kegiatan minimal harus terdiri dari 10 karakter.";
         } else {
-          // Validasi Urutan Tanggal & Waktu
-          const startDate = new Date(String(nextRecord.tanggal_mulai));
-          const endDate = new Date(String(nextRecord.tanggal_selesai));
-          if (startDate > endDate) {
-            validationError = "Tanggal selesai kegiatan tidak boleh mendahului tanggal mulai.";
-          } else if (String(nextRecord.tanggal_mulai) === String(nextRecord.tanggal_selesai)) {
-            const timeStart = String(nextRecord.waktu_mulai);
-            const timeEnd = String(nextRecord.waktu_selesai);
-            if (timeStart >= timeEnd) {
-              validationError = "Waktu selesai harus setelah waktu mulai untuk kegiatan di hari yang sama.";
+          // Validasi Urutan Tanggal & Waktu (hanya jika keduanya terisi)
+          if (nextRecord.tanggal_mulai && nextRecord.tanggal_selesai) {
+            const startDate = new Date(String(nextRecord.tanggal_mulai));
+            const endDate = new Date(String(nextRecord.tanggal_selesai));
+            if (startDate > endDate) {
+              validationError = "Tanggal selesai kegiatan tidak boleh mendahului tanggal mulai.";
+            } else if (String(nextRecord.tanggal_mulai) === String(nextRecord.tanggal_selesai)) {
+              const timeStart = String(nextRecord.waktu_mulai || "");
+              const timeEnd = String(nextRecord.waktu_selesai || "");
+              if (timeStart && timeEnd && timeStart >= timeEnd) {
+                validationError = "Waktu selesai harus setelah waktu mulai untuk kegiatan di hari yang sama.";
+              }
             }
           }
         }
       } else if (activeResource.key === "gallery") {
-        if (String(nextRecord.judul).trim().length < 3) {
+        if (nextRecord.judul && String(nextRecord.judul).trim().length < 3) {
           validationError = "Judul galeri minimal harus terdiri dari 3 karakter.";
-        } else if (String(nextRecord.deskripsi).trim().length < 5) {
+        } else if (nextRecord.deskripsi && String(nextRecord.deskripsi).trim().length < 5) {
           validationError = "Deskripsi galeri minimal harus terdiri dari 5 karakter.";
         }
       } else if (activeResource.key === "monografi") {
         const tahun = Number(nextRecord.tahun);
-        const totalPenduduk = Number(nextRecord.jumlah_penduduk);
-        const laki = Number(nextRecord.jumlah_laki_laki);
-        const perempuan = Number(nextRecord.jumlah_perempuan);
-        const kk = Number(nextRecord.jumlah_kk);
-        const dusun = Number(nextRecord.jumlah_dusun);
-        const rt = Number(nextRecord.jumlah_rt);
-        const rw = Number(nextRecord.jumlah_rw);
-        const anak = Number(nextRecord.jumlah_anak);
-        const balita = Number(nextRecord.jumlah_balita);
-        const paud = Number(nextRecord.pendidikan_paud);
-        const sd = Number(nextRecord.pendidikan_sd);
-        const smp = Number(nextRecord.pendidikan_smp);
-        const sma = Number(nextRecord.pendidikan_sma);
+        const totalPenduduk = Number(nextRecord.jumlah_penduduk || 0);
+        const laki = Number(nextRecord.jumlah_laki_laki || 0);
+        const perempuan = Number(nextRecord.jumlah_perempuan || 0);
+        const kk = Number(nextRecord.jumlah_kk || 0);
+        const rt = Number(nextRecord.jumlah_rt || 0);
+        const rw = Number(nextRecord.jumlah_rw || 0);
+        const balita = Number(nextRecord.jumlah_balita || 0);
+        const anak = Number(nextRecord.jumlah_anak || 0);
+        const lansia = Number(nextRecord.jumlah_lansia || 0);
+        const paud = Number(nextRecord.pendidikan_paud || 0);
+        const tk = Number(nextRecord.pendidikan_tk || 0);
+        const sd = Number(nextRecord.pendidikan_sd || 0);
+        const smp = Number(nextRecord.pendidikan_smp || 0);
+        const sma = Number(nextRecord.pendidikan_sma || 0);
+        const sarjana = Number(nextRecord.pendidikan_sarjana || 0);
 
         if (tahun < 1900 || tahun > 2100) {
           validationError = "Tahun monografi harus valid (antara tahun 1900 dan 2100).";
@@ -382,24 +412,26 @@ export default function AdminPanel() {
           laki < 0 ||
           perempuan < 0 ||
           kk < 0 ||
-          dusun < 0 ||
           rt < 0 ||
           rw < 0 ||
           anak < 0 ||
           balita < 0 ||
+          lansia < 0 ||
           paud < 0 ||
+          tk < 0 ||
           sd < 0 ||
           smp < 0 ||
-          sma < 0
+          sma < 0 ||
+          sarjana < 0
         ) {
           validationError = "Semua data angka monografi tidak boleh bernilai negatif.";
-        } else if (laki + perempuan !== totalPenduduk) {
+        } else if (totalPenduduk > 0 && (laki + perempuan !== totalPenduduk)) {
           validationError = `Jumlah penduduk laki-laki (${laki}) ditambah perempuan (${perempuan}) harus sama dengan total jumlah penduduk (${totalPenduduk}).`;
         } else if (kk > totalPenduduk) {
           validationError = "Jumlah Kepala Keluarga (KK) tidak boleh melebihi total jumlah penduduk.";
-        } else if (anak + balita > totalPenduduk) {
-          validationError = "Jumlah anak dan balita tidak boleh melebihi total jumlah penduduk.";
-        } else if (paud + sd + smp + sma > totalPenduduk) {
+        } else if (anak + balita + lansia > totalPenduduk) {
+          validationError = "Jumlah balita, anak-anak, dan lansia tidak boleh melebihi total jumlah penduduk.";
+        } else if (paud + tk + sd + smp + sma + sarjana > totalPenduduk) {
           validationError = "Jumlah warga berdasarkan tingkat pendidikan tidak boleh melebihi total jumlah penduduk.";
         }
       }
@@ -426,33 +458,52 @@ export default function AdminPanel() {
       const { id, ...payload } = nextRecord;
 
       try {
-        if (id === emptyId) {
-          await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
-            method: "POST",
-            body: payload,
-          });
+        if (activeResource.key === "pengaturan") {
+          const exists = data[activeResource.key] && data[activeResource.key].length > 0;
+          if (exists) {
+            await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+              method: "PATCH",
+              query: `?id=eq.1`,
+              body: { id: 1, ...payload },
+            });
+          } else {
+            await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+              method: "POST",
+              body: { id: 1, ...payload },
+            });
+          }
+          await reloadRows();
+          setStatusMessage("Pengaturan desa berhasil disimpan ke Supabase.");
+          setStatusType("success");
         } else {
-          await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
-            method: "PATCH",
-            query: `?id=eq.${id}`,
-            body: payload,
-          });
-        }
+          if (id === emptyId) {
+            await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+              method: "POST",
+              body: payload,
+            });
+          } else {
+            await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
+              method: "PATCH",
+              query: `?id=eq.${id}`,
+              body: payload,
+            });
+          }
 
-        await reloadRows();
-        setEditing(null);
-        setImageDrafts({});
-        setStatusMessage("Data berhasil disimpan ke Supabase.");
-        setStatusType("success");
-        form.reset();
+          await reloadRows();
+          setEditing(null);
+          setImageDrafts({});
+          setStatusMessage("Data berhasil disimpan ke Supabase.");
+          setStatusType("success");
+          form.reset();
+        }
       } catch (error) {
         setStatusMessage(`Data gagal disimpan: ${getErrorMessage(error)}`);
         setStatusType("error");
       }
     };
 
-    const isEdit = formRecord.id !== emptyId;
-    const titleVal = String(nextRecord[activeResource.titleField] ?? "");
+    const isEdit = formRecord.id !== emptyId || activeResource.key === "pengaturan";
+    const titleVal = activeResource.key === "pengaturan" ? "Pengaturan Website" : String(nextRecord[activeResource.titleField] ?? "");
 
     setConfirmModal({
       isOpen: true,
@@ -538,11 +589,11 @@ export default function AdminPanel() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Link className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold" href="/">
+            <Link className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold hover:bg-[#f6f3ec] transition" href="/">
               Website
             </Link>
             <button
-              className="rounded-md bg-[#1b352c] px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-md bg-[#1b352c] px-4 py-2 text-sm font-semibold text-white cursor-pointer hover:bg-[#28493d] transition"
               onClick={handleLogout}
               type="button"
             >
@@ -556,10 +607,10 @@ export default function AdminPanel() {
         <aside className="space-y-2">
           {resources.map((resource) => (
             <button
-              className={`w-full rounded-md px-4 py-3 text-left text-sm font-semibold transition ${
+              className={`w-full rounded-md px-4 py-3 text-left text-sm font-semibold transition cursor-pointer ${
                 resource.key === activeResource.key
                   ? "bg-[#1b352c] text-white"
-                  : "border border-[#d8d1c0] bg-white hover:border-[#697a36]"
+                  : "border border-[#d8d1c0] bg-white hover:border-[#697a36] hover:bg-[#f6f3ec]"
               }`}
               key={resource.key}
               onClick={() => selectResource(resource.key)}
@@ -575,19 +626,21 @@ export default function AdminPanel() {
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
               <div>
                 <p className="section-kicker">{activeResource.label}</p>
-                <h2 className="text-2xl font-bold">Form {editing ? "Edit" : "Tambah"} Data</h2>
+                <h2 className="text-2xl font-bold">Form {activeResource.key === "pengaturan" ? "Ubah" : (editing ? "Edit" : "Tambah")} Data</h2>
                 <p className="mt-2 text-sm leading-6 text-[#5b6b63]">{activeResource.description}</p>
               </div>
-              <button
-                className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold"
-                onClick={() => {
-                  setEditing(null);
-                  setImageDrafts({});
-                }}
-                type="button"
-              >
-                Form Baru
-              </button>
+              {activeResource.key !== "pengaturan" && (
+                <button
+                  className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[#f6f3ec] transition"
+                  onClick={() => {
+                    setEditing(null);
+                    setImageDrafts({});
+                  }}
+                  type="button"
+                >
+                  Form Baru
+                </button>
+              )}
             </div>
 
             <form key={`${activeResource.key}-${formRecord.id}`} className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
@@ -599,7 +652,7 @@ export default function AdminPanel() {
                   <span>{field.label}</span>
                   {field.type === "textarea" ? (
                     <textarea
-                      className="mt-2 min-h-28 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36]"
+                      className="mt-2 min-h-28 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36] bg-white font-normal"
                       defaultValue={String(formRecord[field.name] ?? "")}
                       name={field.name}
                       required={field.required}
@@ -612,7 +665,7 @@ export default function AdminPanel() {
                     />
                   ) : (
                     <input
-                      className="mt-2 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36]"
+                      className="mt-2 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36] bg-white font-normal text-sm"
                       defaultValue={String(formRecord[field.name] ?? "")}
                       name={field.name}
                       required={field.required}
@@ -622,11 +675,11 @@ export default function AdminPanel() {
                 </div>
               ))}
               <div className="flex flex-wrap gap-3 md:col-span-2">
-                <button className="rounded-md bg-[#1b352c] px-5 py-3 text-sm font-bold text-white" type="submit">
-                  {editing ? "Simpan Perubahan" : "Tambah Data"}
+                <button className="rounded-md bg-[#1b352c] px-5 py-3 text-sm font-bold text-white cursor-pointer hover:bg-[#27483c] transition" type="submit">
+                  {activeResource.key === "pengaturan" ? "Simpan Pengaturan" : (editing ? "Simpan Perubahan" : "Tambah Data")}
                 </button>
                 <button
-                  className="rounded-md border border-[#d8d1c0] px-5 py-3 text-sm font-bold"
+                  className="rounded-md border border-[#d8d1c0] px-5 py-3 text-sm font-bold cursor-pointer hover:bg-[#f6f3ec] transition"
                   onClick={handleReset}
                   type="button"
                 >
@@ -662,53 +715,55 @@ export default function AdminPanel() {
             </form>
           </section>
 
-          <section className="overflow-hidden rounded-lg border border-[#d8d1c0] bg-white shadow-sm">
-            <div className="border-b border-[#e7e1d3] p-6">
-              <h2 className="text-2xl font-bold">Daftar {activeResource.label}</h2>
-              <p className="mt-2 text-sm text-[#5b6b63]">Total data: {activeRows.length}</p>
-            </div>
-            <div className="divide-y divide-[#e7e1d3]">
-              {activeRows.map((row) => (
-                <article className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center" key={row.id}>
-                  <div>
-                    <p className="font-bold">{String(row[activeResource.titleField])}</p>
-                    <p className="mt-1 text-sm text-[#5b6b63]">ID: {row.id}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold"
-                      onClick={() => {
-                        setEditing(row);
-                        setImageDrafts({});
-                      }}
-                      type="button"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
-                      onClick={() => {
-                        const rowTitle = String(row[activeResource.titleField] ?? row.id);
-                        setConfirmModal({
-                          isOpen: true,
-                          type: "delete",
-                          title: "Konfirmasi Hapus Data",
-                          message: `Apakah Anda yakin ingin menghapus data "${rowTitle}"? Tindakan ini tidak dapat dibatalkan.`,
-                          onConfirm: () => {
-                            handleDelete(row.id);
-                            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-                          },
-                        });
-                      }}
-                      type="button"
-                    >
-                      Hapus
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+          {activeResource.key !== "pengaturan" && (
+            <section className="overflow-hidden rounded-lg border border-[#d8d1c0] bg-white shadow-sm">
+              <div className="border-b border-[#e7e1d3] p-6">
+                <h2 className="text-2xl font-bold">Daftar {activeResource.label}</h2>
+                <p className="mt-2 text-sm text-[#5b6b63]">Total data: {activeRows.length}</p>
+              </div>
+              <div className="divide-y divide-[#e7e1d3]">
+                {activeRows.map((row) => (
+                  <article className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center" key={row.id}>
+                    <div>
+                      <p className="font-bold">{String(row[activeResource.titleField])}</p>
+                      <p className="mt-1 text-sm text-[#5b6b63]">ID: {row.id}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[#f6f3ec] transition"
+                        onClick={() => {
+                          setEditing(row);
+                          setImageDrafts({});
+                        }}
+                        type="button"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 transition-colors cursor-pointer"
+                        onClick={() => {
+                          const rowTitle = String(row[activeResource.titleField] ?? row.id);
+                          setConfirmModal({
+                            isOpen: true,
+                            type: "delete",
+                            title: "Konfirmasi Hapus Data",
+                            message: `Apakah Anda yakin ingin menghapus data "${rowTitle}"? Tindakan ini tidak dapat dibatalkan.`,
+                            onConfirm: () => {
+                              handleDelete(row.id);
+                              setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                            },
+                          });
+                        }}
+                        type="button"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </section>
 
@@ -787,6 +842,9 @@ function ImageUploadField({
   onFileSelect: (fieldName: string, file?: File) => void;
   value: string;
 }) {
+  const isHeroBgMedia = field.name === "hero_bg_media";
+  const acceptTypes = isHeroBgMedia ? "image/*,video/*" : "image/*";
+
   const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
     onFileSelect(field.name, event.dataTransfer.files[0]);
@@ -795,6 +853,8 @@ function ImageUploadField({
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     onFileSelect(field.name, event.target.files?.[0]);
   };
+
+  const isVideo = value.startsWith("data:video/") || value.endsWith(".mp4") || value.endsWith(".webm") || value.endsWith(".mov") || value.endsWith(".ogg");
 
   return (
     <div
@@ -805,14 +865,22 @@ function ImageUploadField({
         className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-md bg-white px-4 py-5 text-center transition hover:bg-[#f6f3ec]"
         onDrop={handleDrop}
       >
-        <input accept="image/*" className="sr-only" name={field.name} onChange={handleChange} type="file" />
+        <input accept={acceptTypes} className="sr-only" name={field.name} onChange={handleChange} type="file" />
         {value ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img alt="Pratinjau gambar" className="mb-4 max-h-44 rounded-md object-cover" src={value} />
+          isVideo ? (
+            <video controls className="mb-4 max-h-44 rounded-md object-cover w-full max-w-[200px]" src={value} />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt="Pratinjau gambar" className="mb-4 max-h-44 rounded-md object-cover" src={value} />
+          )
         ) : null}
-        <span className="text-sm font-bold text-[#1b352c]">Pilih gambar dari device</span>
+        <span className="text-sm font-bold text-[#1b352c]">
+          {isHeroBgMedia ? "Pilih gambar atau video dari device" : "Pilih gambar dari device"}
+        </span>
         <span className="mt-1 text-xs font-medium text-[#5b6b63]">
-          Klik area ini atau drag and drop file gambar ke sini
+          {isHeroBgMedia 
+            ? "Mendukung format gambar (PNG, JPG, WEBP) atau video (MP4, WEBM)"
+            : "Mendukung format PNG, JPG, JPEG, WEBP, GIF, dll."}
         </span>
       </label>
       <input name={`${field.name}_existing`} readOnly type="hidden" value={value} />

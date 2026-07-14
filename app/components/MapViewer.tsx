@@ -162,7 +162,7 @@ export default function MapViewer({ src, alt }: MapViewerProps) {
             scrolling="no" 
             marginHeight={0} 
             marginWidth={0} 
-            src="https://www.openstreetmap.org/export/embed.html?bbox=110.5890,-7.8130,110.6018,-7.8040&layer=mapnik&marker=-7.8082,110.5954"
+            src="https://www.openstreetmap.org/export/embed.html?bbox=110.5925,-7.8105,110.5985,-7.8060&layer=mapnik&marker=-7.8082,110.5954"
             className="absolute inset-0 w-full h-full rounded-lg border-0"
             title="Peta Geografis Padukuhan Plasan"
           ></iframe>

@@ -1,18 +1,20 @@
 import Link from "next/link";
 import VillageImage from "./components/VillageImage";
 import AdminLoginButton from "./components/AdminLoginButton";
+import HomeStats from "./components/HomeStats";
 import {
   Berita,
-  desa,
+  desa as staticDesa,
   formatDate,
-  formatNumber,
   GalleryItem,
   initialBerita,
   initialGallery,
   initialKegiatan,
   initialMonografiDesa,
+  initialPengaturan,
   Kegiatan,
   MonografiDesa,
+  PengaturanDesa,
 } from "./lib/data";
 import { getSupabaseRows } from "./lib/supabase";
 
@@ -20,11 +22,12 @@ export const revalidate = 1;
 
 async function getHomeData() {
   try {
-    const [berita, kegiatan, gallery, monografiDesa] = await Promise.all([
+    const [berita, kegiatan, gallery, monografiDesa, pengaturanRows] = await Promise.all([
       getSupabaseRows<Berita>("berita", "tanggal_publish"),
       getSupabaseRows<Kegiatan>("kegiatan", "tanggal_mulai"),
       getSupabaseRows<GalleryItem>("gallery", "tanggal_upload"),
       getSupabaseRows<MonografiDesa>("monografi_desa", "tahun"),
+      getSupabaseRows<PengaturanDesa>("pengaturan_desa", "id").catch(() => []),
     ]);
 
     return {
@@ -32,6 +35,7 @@ async function getHomeData() {
       kegiatan: kegiatan.length ? kegiatan : initialKegiatan,
       gallery: gallery.length ? gallery : initialGallery,
       monografiDesa: monografiDesa.length ? monografiDesa : initialMonografiDesa,
+      pengaturan: pengaturanRows && pengaturanRows.length ? pengaturanRows[0] : initialPengaturan,
     };
   } catch {
     return {
@@ -39,37 +43,31 @@ async function getHomeData() {
       kegiatan: initialKegiatan,
       gallery: initialGallery,
       monografiDesa: initialMonografiDesa,
+      pengaturan: initialPengaturan,
     };
   }
 }
 
 export default async function Home() {
-  const { berita, kegiatan, gallery, monografiDesa } = await getHomeData();
+  const { berita, kegiatan, gallery, monografiDesa, pengaturan } = await getHomeData();
   const monografiTerbaru = monografiDesa[0];
-  const statCards = [
-    {
-      label: "Penduduk",
-      value: formatNumber(monografiTerbaru.jumlah_penduduk),
-      detail: `${formatNumber(monografiTerbaru.jumlah_laki_laki)} laki-laki, ${formatNumber(
-        monografiTerbaru.jumlah_perempuan,
-      )} perempuan`,
-    },
-    {
-      label: "Kepala Keluarga",
-      value: formatNumber(monografiTerbaru.jumlah_kk),
-      detail: `Tahun data ${monografiTerbaru.tahun}`,
-    },
-    {
-      label: "Wilayah",
-      value: monografiTerbaru.luas_wilayah,
-      detail: `${monografiTerbaru.jumlah_dusun} dusun, ${monografiTerbaru.jumlah_rw} RW, ${monografiTerbaru.jumlah_rt} RT`,
-    },
-    {
-      label: "Administrasi",
-      value: `${monografiTerbaru.jumlah_dusun} Dusun`,
-      detail: "Terhubung dengan layanan desa dan warga",
-    },
-  ];
+
+  const desa = {
+    nama: pengaturan.nama,
+    namaSingkat: pengaturan.nama_singkat,
+    kecamatan: pengaturan.kecamatan,
+    kabupaten: pengaturan.kabupaten,
+    email: pengaturan.email,
+    telepon: pengaturan.telepon,
+    heroJudul: pengaturan.hero_judul,
+    heroDeskripsi: pengaturan.hero_deskripsi,
+    profilJudul: pengaturan.profil_judul,
+    profilDeskripsi: pengaturan.profil_deskripsi,
+    profilKategori1: pengaturan.profil_kategori_1,
+    profilKategori2: pengaturan.profil_kategori_2,
+    profilKategori3: pengaturan.profil_kategori_3,
+    heroBgMedia: pengaturan.hero_bg_media || "/hero-desa.png",
+  };
 
   return (
     <main className="min-h-screen bg-[#f7f5ef] text-[#1e2c26] font-sans">
@@ -93,20 +91,36 @@ export default async function Home() {
       </header>
 
       <section id="beranda" className="relative flex min-h-[92vh] items-end overflow-hidden pt-16">
-        <VillageImage
-          src="/hero-desa.png"
-          alt="Pemandangan desa dengan area persawahan dan permukiman"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        {(() => {
+          const isVideo = desa.heroBgMedia.startsWith("data:video/") || desa.heroBgMedia.endsWith(".mp4") || desa.heroBgMedia.endsWith(".webm") || desa.heroBgMedia.endsWith(".mov") || desa.heroBgMedia.endsWith(".ogg");
+          if (isVideo) {
+            return (
+              <video
+                src={desa.heroBgMedia}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            );
+          }
+          return (
+            <VillageImage
+              src={desa.heroBgMedia}
+              alt="Pemandangan desa dengan area persawahan dan permukiman"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          );
+        })()}
         <div className="absolute inset-0 bg-[#10271f]/55" />
         <div className="relative mx-auto grid w-full max-w-7xl gap-8 px-5 pb-12 pt-24 sm:px-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
           <div className="max-w-3xl text-white">
             <h1 className="font-serif text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl tracking-tight">
-              {desa.nama}
+              {desa.heroJudul}
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/90 sm:text-lg">
-              Pusat informasi profil wilayah, pelayanan publik, berita, kegiatan, galeri,
-              dan monografi {desa.namaSingkat} yang tersaji transparan untuk warga.
+              {desa.heroDeskripsi}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -123,16 +137,8 @@ export default async function Home() {
               </a>
             </div>
           </div>
-          <div className="grid gap-4 rounded-2xl border border-white/15 bg-white/8 p-5 text-white shadow-2xl backdrop-blur-md sm:grid-cols-2">
-            {statCards.map((item) => (
-              <div key={item.label} className="rounded-xl border border-white/5 bg-white/5 p-4.5 transition-all duration-300 hover:scale-[1.02] hover:bg-white/12 hover:border-white/20">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#e7c765]">
-                  {item.label}
-                </p>
-                <p className="mt-2 text-2xl font-bold font-serif">{item.value}</p>
-                <p className="mt-2 text-xs leading-5 text-white/70">{item.detail}</p>
-              </div>
-            ))}
+          <div className="rounded-2xl border border-white/15 bg-white/8 p-5 text-white shadow-2xl backdrop-blur-md w-full">
+            <HomeStats monografiDesa={monografiDesa} />
           </div>
         </div>
       </section>
@@ -140,16 +146,14 @@ export default async function Home() {
       <section id="profil" className="mx-auto grid max-w-7xl gap-12 px-5 py-24 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] items-center">
         <div>
           <p className="section-kicker">Profil Wilayah</p>
-          <h2 className="section-title">Ruang hidup warga Plasan yang bertumbuh lewat gotong royong.</h2>
+          <h2 className="section-title">{desa.profilJudul}</h2>
         </div>
         <div className="space-y-8 text-base leading-8 text-[#4a5b52]">
           <p className="text-lg/relaxed text-[#3a4b42]">
-            {desa.nama} merupakan wilayah agraris dengan potensi pertanian yang subur, UMKM
-            rumah tangga yang produktif, kelembagaan warga yang solid, dan ruang kerukunan sosial yang kuat. Website
-            ini dirancang sebagai pintu gerbang informasi resmi dan pelayanan publik bagi seluruh warga.
+            {desa.profilDeskripsi}
           </p>
           <div className="grid gap-4 sm:grid-cols-3">
-            {["Pelayanan Administrasi", "Informasi Pembangunan", "Potensi Padukuhan"].map((item) => (
+            {[desa.profilKategori1, desa.profilKategori2, desa.profilKategori3].map((item) => (
               <div key={item} className="rounded-xl border border-[#e0dacb] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/50 hover:-translate-y-0.5">
                 <p className="font-bold text-[#1e2c26] text-sm leading-snug">{item}</p>
               </div>
@@ -165,18 +169,28 @@ export default async function Home() {
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
           {berita.map((item) => (
-            <article key={item.id} className="group overflow-hidden rounded-xl border border-[#e0dacb] bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/40 hover:-translate-y-1">
-              <div className="relative aspect-[16/10] overflow-hidden">
+            <Link 
+              key={item.id} 
+              href={`/berita/${item.slug}`}
+              className="group overflow-hidden rounded-xl border border-[#e0dacb] bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/40 hover:-translate-y-1 flex flex-col cursor-pointer"
+            >
+              <div className="relative aspect-[16/10] overflow-hidden bg-[#fcfbfa]">
                 <VillageImage src={item.gambar} alt={item.judul} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
               </div>
-              <div className="p-6">
+              <div className="p-6 flex-grow flex flex-col">
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#697a36]">
                   {formatDate(item.tanggal_publish)} • {item.penulis}
                 </p>
                 <h3 className="mt-3 text-lg font-bold leading-snug text-[#1e2c26] transition-colors duration-200 group-hover:text-[#697a36]">{item.judul}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-[#5b6b63] line-clamp-3">{item.isi}</p>
+                <p className="mt-3 text-sm leading-relaxed text-[#5b6b63] line-clamp-3 flex-grow">{item.isi}</p>
+                <span className="mt-4 text-xs font-bold text-[#697a36] inline-flex items-center gap-1 group-hover:text-[#1b352c] transition-colors">
+                  Baca Selengkapnya
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </span>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
       </section>
@@ -189,13 +203,23 @@ export default async function Home() {
           </div>
           <div className="grid gap-6 lg:grid-cols-3">
             {kegiatan.map((item) => (
-              <article key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-6 transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:-translate-y-1 shadow-sm hover:shadow-md border-l-4 border-l-[#e7c765]">
+              <Link 
+                key={item.id} 
+                href={`/kegiatan/${item.slug}`}
+                className="group rounded-xl border border-white/10 bg-white/5 p-6 transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:-translate-y-1 shadow-sm hover:shadow-md border-l-4 border-l-[#e7c765] flex flex-col cursor-pointer"
+              >
                 <p className="text-xs font-bold uppercase tracking-wider text-[#f2d778]">
                   {formatDate(item.tanggal_mulai)} • {item.waktu_mulai} - {item.waktu_selesai} WIB
                 </p>
-                <h3 className="mt-4 text-lg font-bold font-serif text-white">{item.nama_kegiatan}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-white/70">{item.deskripsi}</p>
-              </article>
+                <h3 className="mt-4 text-lg font-bold font-serif text-white group-hover:text-[#e7c765] transition-colors">{item.nama_kegiatan}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-white/70 line-clamp-3 flex-grow">{item.deskripsi}</p>
+                <span className="mt-4 text-xs font-bold text-[#e7c765] inline-flex items-center gap-1 group-hover:text-white transition-colors">
+                  Lihat Detail Agenda
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </span>
+              </Link>
             ))}
           </div>
         </div>
