@@ -37,7 +37,8 @@ async function getHomeData() {
       monografiDesa: monografiDesa.length ? monografiDesa : initialMonografiDesa,
       pengaturan: pengaturanRows && pengaturanRows.length ? pengaturanRows[0] : initialPengaturan,
     };
-  } catch {
+  } catch (error) {
+    console.error("Gagal mengambil data dari Supabase (Homepage):", error);
     return {
       berita: initialBerita,
       kegiatan: initialKegiatan,

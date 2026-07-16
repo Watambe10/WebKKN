@@ -266,9 +266,9 @@ export default function AdminPanel() {
         if (!ignore) {
           const errMsg = error instanceof Error ? error.message : String(error);
           if (errMsg.includes("PGRST205") || errMsg.includes("Could not find the table")) {
-            setStatusMessage(`Tabel '${activeResource.tableName}' belum dibuat di Supabase. Silakan salin & jalankan script SQL dari file 'supabase_schema.sql' di SQL Editor Dashboard Supabase Anda.`);
+            setStatusMessage(`Tabel '${activeResource.tableName}' belum dibuat di database. Silakan jalankan script SQL migrasi database Anda.`);
           } else {
-            setStatusMessage(`Gagal memuat data dari Supabase: ${errMsg}`);
+            setStatusMessage(`Gagal memuat data: ${errMsg}`);
           }
           setStatusType("error");
           if (activeResource.key === "pengaturan") {
@@ -473,10 +473,11 @@ export default function AdminPanel() {
             });
           }
           await reloadRows();
-          setStatusMessage("Pengaturan desa berhasil disimpan ke Supabase.");
+          setStatusMessage("Pengaturan desa berhasil disimpan.");
           setStatusType("success");
         } else {
-          if (id === emptyId) {
+          const isInsert = id === emptyId;
+          if (isInsert) {
             await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
               method: "POST",
               body: payload,
@@ -492,7 +493,7 @@ export default function AdminPanel() {
           await reloadRows();
           setEditing(null);
           setImageDrafts({});
-          setStatusMessage("Data berhasil disimpan ke Supabase.");
+          setStatusMessage(isInsert ? "Data berhasil ditambahkan." : "Data berhasil diubah.");
           setStatusType("success");
           form.reset();
         }
@@ -528,34 +529,12 @@ export default function AdminPanel() {
       await reloadRows();
       setEditing(null);
       setImageDrafts({});
-      setStatusMessage("Data berhasil dihapus dari Supabase.");
+      setStatusMessage("Data berhasil dihapus.");
       setStatusType("success");
     } catch (error) {
       setStatusMessage(`Data gagal dihapus: ${getErrorMessage(error)}`);
       setStatusType("error");
     }
-  };
-
-  const handleReset = () => {
-    setConfirmModal({
-      isOpen: true,
-      type: "reset",
-      title: "Konfirmasi Muat Ulang Data",
-      message: "Apakah Anda yakin ingin memuat ulang data? Semua perubahan yang belum disimpan pada form akan dibatalkan.",
-      onConfirm: async () => {
-        try {
-          await reloadRows();
-          setEditing(null);
-          setImageDrafts({});
-          setStatusMessage("Data terbaru berhasil dimuat dari Supabase.");
-          setStatusType("success");
-        } catch (error) {
-          setStatusMessage(`Data gagal dimuat ulang: ${getErrorMessage(error)}`);
-          setStatusType("error");
-        }
-        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-      },
-    });
   };
 
   const selectResource = (resourceKey: string) => {
@@ -608,7 +587,7 @@ export default function AdminPanel() {
           {resources.map((resource) => (
             <button
               className={`w-full rounded-md px-4 py-3 text-left text-sm font-semibold transition cursor-pointer ${
-                resource.key === activeResource.key
+                resource.key === activeKey
                   ? "bg-[#1b352c] text-white"
                   : "border border-[#d8d1c0] bg-white hover:border-[#697a36] hover:bg-[#f6f3ec]"
               }`}
@@ -619,150 +598,166 @@ export default function AdminPanel() {
               {resource.label}
             </button>
           ))}
+          <button
+            className={`w-full rounded-md px-4 py-3 text-left text-sm font-semibold transition cursor-pointer ${
+              activeKey === "profile"
+                ? "bg-[#1b352c] text-white"
+                : "border border-[#d8d1c0] bg-white hover:border-[#697a36] hover:bg-[#f6f3ec]"
+            }`}
+            onClick={() => {
+              setActiveKey("profile");
+              setEditing(null);
+              setImageDrafts({});
+              setStatusMessage("");
+              setStatusType("");
+            }}
+            type="button"
+          >
+            Profil Admin
+          </button>
         </aside>
 
         <div className="space-y-6">
-          <section className="rounded-lg border border-[#d8d1c0] bg-white p-6 shadow-sm">
-            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-              <div>
-                <p className="section-kicker">{activeResource.label}</p>
-                <h2 className="text-2xl font-bold">Form {activeResource.key === "pengaturan" ? "Ubah" : (editing ? "Edit" : "Tambah")} Data</h2>
-                <p className="mt-2 text-sm leading-6 text-[#5b6b63]">{activeResource.description}</p>
-              </div>
+          {activeKey === "profile" ? (
+            <AdminProfileForm />
+          ) : (
+            <>
+              <section className="rounded-lg border border-[#d8d1c0] bg-white p-6 shadow-sm">
+                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+                  <div>
+                    <p className="section-kicker">{activeResource.label}</p>
+                    <h2 className="text-2xl font-bold">Form {activeResource.key === "pengaturan" ? "Ubah" : (editing ? "Edit" : "Tambah")} Data</h2>
+                    <p className="mt-2 text-sm leading-6 text-[#5b6b63]">{activeResource.description}</p>
+                  </div>
+                  {activeResource.key !== "pengaturan" && (
+                    <button
+                      className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[#f6f3ec] transition"
+                      onClick={() => {
+                        setEditing(null);
+                        setImageDrafts({});
+                      }}
+                      type="button"
+                    >
+                      Form Baru
+                    </button>
+                  )}
+                </div>
+
+                <form key={`${activeResource.key}-${formRecord.id}`} className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
+                  {activeResource.fields.map((field) => (
+                    <div
+                      className={`block text-sm font-semibold ${field.type === "textarea" ? "md:col-span-2" : ""}`}
+                      key={field.name}
+                    >
+                      <span>{field.label}</span>
+                      {field.type === "textarea" ? (
+                        <textarea
+                          className="mt-2 min-h-28 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36] bg-white font-normal"
+                          defaultValue={String(formRecord[field.name] ?? "")}
+                          name={field.name}
+                          required={field.required}
+                        />
+                      ) : field.type === "image" ? (
+                        <ImageUploadField
+                          field={field}
+                          onFileSelect={handleImageFile}
+                          value={imageDrafts[field.name] || String(formRecord[field.name] ?? "")}
+                        />
+                      ) : (
+                        <input
+                          className="mt-2 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36] bg-white font-normal text-sm"
+                          defaultValue={String(formRecord[field.name] ?? "")}
+                          name={field.name}
+                          required={field.required}
+                          type={field.type ?? "text"}
+                        />
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap gap-3 md:col-span-2">
+                    <button className="rounded-md bg-[#1b352c] px-5 py-3 text-sm font-bold text-white cursor-pointer hover:bg-[#27483c] transition" type="submit">
+                      {activeResource.key === "pengaturan" ? "Simpan Pengaturan" : (editing ? "Simpan Perubahan" : "Tambah Data")}
+                    </button>
+                  </div>
+                  {statusMessage ? (
+                    <div
+                      className={`flex items-center gap-2.5 rounded-lg px-4 py-3.5 text-sm font-semibold border md:col-span-2 transition-all duration-200 ${
+                        statusType === "error"
+                          ? "bg-red-50 text-red-700 border-red-200"
+                          : statusType === "success"
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                          : "bg-[#fcfbfa] text-[#5b6b63] border-[#e0dacb]"
+                      }`}
+                    >
+                      {statusType === "error" ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      ) : statusType === "success" ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-[#8e8570]" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      <span>{statusMessage}</span>
+                    </div>
+                  ) : null}
+                </form>
+              </section>
+
               {activeResource.key !== "pengaturan" && (
-                <button
-                  className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[#f6f3ec] transition"
-                  onClick={() => {
-                    setEditing(null);
-                    setImageDrafts({});
-                  }}
-                  type="button"
-                >
-                  Form Baru
-                </button>
+                <section className="overflow-hidden rounded-lg border border-[#d8d1c0] bg-white shadow-sm">
+                  <div className="border-b border-[#e7e1d3] p-6">
+                    <h2 className="text-2xl font-bold">Daftar {activeResource.label}</h2>
+                    <p className="mt-2 text-sm text-[#5b6b63]">Total data: {activeRows.length}</p>
+                  </div>
+                  <div className="divide-y divide-[#e7e1d3]">
+                    {activeRows.map((row) => (
+                      <article className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center" key={row.id}>
+                        <div>
+                          <p className="font-bold">{String(row[activeResource.titleField])}</p>
+                          <p className="mt-1 text-sm text-[#5b6b63]">ID: {row.id}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[#f6f3ec] transition"
+                            onClick={() => {
+                              setEditing(row);
+                              setImageDrafts({});
+                            }}
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 transition-colors cursor-pointer"
+                            onClick={() => {
+                              const rowTitle = String(row[activeResource.titleField] ?? row.id);
+                              setConfirmModal({
+                                isOpen: true,
+                                type: "delete",
+                                title: "Konfirmasi Hapus Data",
+                                message: `Apakah Anda yakin ingin menghapus data "${rowTitle}"? Tindakan ini tidak dapat dibatalkan.`,
+                                onConfirm: () => {
+                                  handleDelete(row.id);
+                                  setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                                },
+                              });
+                            }}
+                            type="button"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
               )}
-            </div>
-
-            <form key={`${activeResource.key}-${formRecord.id}`} className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
-              {activeResource.fields.map((field) => (
-                <div
-                  className={`block text-sm font-semibold ${field.type === "textarea" ? "md:col-span-2" : ""}`}
-                  key={field.name}
-                >
-                  <span>{field.label}</span>
-                  {field.type === "textarea" ? (
-                    <textarea
-                      className="mt-2 min-h-28 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36] bg-white font-normal"
-                      defaultValue={String(formRecord[field.name] ?? "")}
-                      name={field.name}
-                      required={field.required}
-                    />
-                  ) : field.type === "image" ? (
-                    <ImageUploadField
-                      field={field}
-                      onFileSelect={handleImageFile}
-                      value={imageDrafts[field.name] || String(formRecord[field.name] ?? "")}
-                    />
-                  ) : (
-                    <input
-                      className="mt-2 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36] bg-white font-normal text-sm"
-                      defaultValue={String(formRecord[field.name] ?? "")}
-                      name={field.name}
-                      required={field.required}
-                      type={field.type ?? "text"}
-                    />
-                  )}
-                </div>
-              ))}
-              <div className="flex flex-wrap gap-3 md:col-span-2">
-                <button className="rounded-md bg-[#1b352c] px-5 py-3 text-sm font-bold text-white cursor-pointer hover:bg-[#27483c] transition" type="submit">
-                  {activeResource.key === "pengaturan" ? "Simpan Pengaturan" : (editing ? "Simpan Perubahan" : "Tambah Data")}
-                </button>
-                <button
-                  className="rounded-md border border-[#d8d1c0] px-5 py-3 text-sm font-bold cursor-pointer hover:bg-[#f6f3ec] transition"
-                  onClick={handleReset}
-                  type="button"
-                >
-                  Muat Ulang Data
-                </button>
-              </div>
-              {statusMessage ? (
-                <div
-                  className={`flex items-center gap-2.5 rounded-lg px-4 py-3.5 text-sm font-semibold border md:col-span-2 transition-all duration-200 ${
-                    statusType === "error"
-                      ? "bg-red-50 text-red-700 border-red-200"
-                      : statusType === "success"
-                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                      : "bg-[#fcfbfa] text-[#5b6b63] border-[#e0dacb]"
-                  }`}
-                >
-                  {statusType === "error" ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  ) : statusType === "success" ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-[#8e8570]" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  <span>{statusMessage}</span>
-                </div>
-              ) : null}
-            </form>
-          </section>
-
-          {activeResource.key !== "pengaturan" && (
-            <section className="overflow-hidden rounded-lg border border-[#d8d1c0] bg-white shadow-sm">
-              <div className="border-b border-[#e7e1d3] p-6">
-                <h2 className="text-2xl font-bold">Daftar {activeResource.label}</h2>
-                <p className="mt-2 text-sm text-[#5b6b63]">Total data: {activeRows.length}</p>
-              </div>
-              <div className="divide-y divide-[#e7e1d3]">
-                {activeRows.map((row) => (
-                  <article className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center" key={row.id}>
-                    <div>
-                      <p className="font-bold">{String(row[activeResource.titleField])}</p>
-                      <p className="mt-1 text-sm text-[#5b6b63]">ID: {row.id}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[#f6f3ec] transition"
-                        onClick={() => {
-                          setEditing(row);
-                          setImageDrafts({});
-                        }}
-                        type="button"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 transition-colors cursor-pointer"
-                        onClick={() => {
-                          const rowTitle = String(row[activeResource.titleField] ?? row.id);
-                          setConfirmModal({
-                            isOpen: true,
-                            type: "delete",
-                            title: "Konfirmasi Hapus Data",
-                            message: `Apakah Anda yakin ingin menghapus data "${rowTitle}"? Tindakan ini tidak dapat dibatalkan.`,
-                            onConfirm: () => {
-                              handleDelete(row.id);
-                              setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-                            },
-                          });
-                        }}
-                        type="button"
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
+            </>
           )}
         </div>
       </section>
@@ -781,12 +776,6 @@ export default function AdminPanel() {
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 border border-amber-100">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </div>
-              ) : confirmModal.type === "reset" ? (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 border border-blue-100">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18" />
                   </svg>
                 </div>
               ) : (
@@ -816,14 +805,12 @@ export default function AdminPanel() {
                     ? "bg-red-700 hover:bg-red-800"
                     : confirmModal.type === "edit"
                     ? "bg-[#697a36] hover:bg-[#5b6b30]"
-                    : confirmModal.type === "reset"
-                    ? "bg-blue-600 hover:bg-blue-700"
                     : "bg-[#1b352c] hover:bg-[#142821]"
                 }`}
                 onClick={confirmModal.onConfirm}
                 type="button"
               >
-                {confirmModal.type === "delete" ? "Ya, Hapus" : confirmModal.type === "edit" ? "Ya, Simpan" : confirmModal.type === "reset" ? "Ya, Muat Ulang" : "Ya, Tambah"}
+                {confirmModal.type === "delete" ? "Ya, Hapus" : confirmModal.type === "edit" ? "Ya, Simpan" : "Ya, Tambah"}
               </button>
             </div>
           </div>
@@ -885,5 +872,200 @@ function ImageUploadField({
       </label>
       <input name={`${field.name}_existing`} readOnly type="hidden" value={value} />
     </div>
+  );
+}
+
+function AdminProfileForm() {
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusType, setStatusType] = useState<"success" | "error" | "">("");
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setStatusMessage("");
+    setStatusType("");
+
+    const storedPassword = localStorage.getItem("plasan-admin-password") || "plasan123";
+
+    if (oldPassword !== storedPassword) {
+      setStatusMessage("Password lama salah.");
+      setStatusType("error");
+      return;
+    }
+
+    if (newPassword.length < 5) {
+      setStatusMessage("Password baru minimal harus terdiri dari 5 karakter.");
+      setStatusType("error");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setStatusMessage("Konfirmasi password baru tidak cocok.");
+      setStatusType("error");
+      return;
+    }
+
+    setIsLoading(true);
+    setTimeout(() => {
+      localStorage.setItem("plasan-admin-password", newPassword);
+      setStatusMessage("Password berhasil diubah.");
+      setStatusType("success");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowOldPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+      setIsLoading(false);
+    }, 400);
+  };
+
+  return (
+    <section className="rounded-lg border border-[#d8d1c0] bg-white p-6 shadow-sm animate-fade-in">
+      <div>
+        <p className="section-kicker">Keamanan Akun</p>
+        <h2 className="text-2xl font-bold">Profil Admin</h2>
+        <p className="mt-2 text-sm leading-6 text-[#5b6b63]">
+          Ubah password akun admin Anda. Username dikunci sebagai <strong>admin</strong>.
+        </p>
+      </div>
+
+      <form className="mt-6 max-w-md space-y-4" onSubmit={handleSubmit}>
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-[#697a36]">Username</label>
+          <input
+            className="mt-2 w-full rounded-md border border-[#d8d1c0] px-3.5 py-2.5 bg-[#f6f3ec] text-[#5b6b63] cursor-not-allowed font-semibold text-sm"
+            value="admin"
+            disabled
+            type="text"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-[#697a36]">Password Lama</label>
+          <div className="relative mt-2">
+            <input
+              className="w-full rounded-md border border-[#d8d1c0] pl-3.5 pr-10 py-2.5 outline-none focus:border-[#697a36] bg-white font-normal text-sm"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              required
+              type={showOldPassword ? "text" : "password"}
+              placeholder="Masukkan password lama Anda"
+            />
+            <button
+              type="button"
+              onClick={() => setShowOldPassword(!showOldPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8e8570] hover:text-[#1e2c26] transition-colors cursor-pointer flex items-center justify-center"
+            >
+              {showOldPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-[#697a36]">Password Baru</label>
+          <div className="relative mt-2">
+            <input
+              className="w-full rounded-md border border-[#d8d1c0] pl-3.5 pr-10 py-2.5 outline-none focus:border-[#697a36] bg-white font-normal text-sm"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              type={showNewPassword ? "text" : "password"}
+              placeholder="Minimal 5 karakter"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8e8570] hover:text-[#1e2c26] transition-colors cursor-pointer flex items-center justify-center"
+            >
+              {showNewPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-[#697a36]">Konfirmasi Password Baru</label>
+          <div className="relative mt-2">
+            <input
+              className="w-full rounded-md border border-[#d8d1c0] pl-3.5 pr-10 py-2.5 outline-none focus:border-[#697a36] bg-white font-normal text-sm"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Masukkan kembali password baru"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8e8570] hover:text-[#1e2c26] transition-colors cursor-pointer flex items-center justify-center"
+            >
+              {showConfirmPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <button
+          className="rounded-md bg-[#1b352c] px-5 py-3 text-sm font-bold text-white cursor-pointer hover:bg-[#27483c] transition disabled:opacity-70 disabled:cursor-not-allowed"
+          type="submit"
+          disabled={isLoading}
+        >
+          {isLoading ? "Menyimpan..." : "Ubah Password"}
+        </button>
+
+        {statusMessage ? (
+          <div
+            className={`mt-4 flex items-center gap-2.5 rounded-lg px-4 py-3.5 text-sm font-semibold border transition-all duration-200 ${
+              statusType === "error"
+                ? "bg-red-50 text-red-700 border-red-200"
+                : "bg-emerald-50 text-emerald-800 border-emerald-200"
+            }`}
+          >
+            {statusType === "error" ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span>{statusMessage}</span>
+          </div>
+        ) : null}
+      </form>
+    </section>
   );
 }

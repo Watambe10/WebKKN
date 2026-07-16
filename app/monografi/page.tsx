@@ -20,16 +20,21 @@ async function getMonografiData() {
   try {
     const monografiDesa = await getSupabaseRows<MonografiDesa>("monografi_desa", "tahun");
     return monografiDesa.length ? monografiDesa : initialMonografiDesa;
-  } catch {
+  } catch (error) {
+    console.error("Gagal mengambil data monografi dari Supabase:", error);
     return initialMonografiDesa;
   }
 }
 
 async function getPengaturanData() {
   try {
-    const data = await getSupabaseRows<PengaturanDesa>("pengaturan_desa", "id").catch(() => []);
+    const data = await getSupabaseRows<PengaturanDesa>("pengaturan_desa", "id").catch((error) => {
+      console.error("Gagal mengambil data pengaturan_desa:", error);
+      return [];
+    });
     return data.length ? data[0] : initialPengaturan;
-  } catch {
+  } catch (error) {
+    console.error("Gagal mengambil data pengaturan dari Supabase:", error);
     return initialPengaturan;
   }
 }
