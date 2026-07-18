@@ -304,6 +304,24 @@ export const initialBerita: Berita[] = [
     penulis: "Karang Taruna",
     tanggal_publish: "2026-06-20",
   },
+  {
+    id: 4,
+    judul: "Pembangunan Pos Rondas Baru di RT 03 untuk Keamanan Lingkungan",
+    slug: "pembangunan-pos-ronda-baru-rt03",
+    isi: "Warga RT 03 bergotong royong membangun pos ronda baru guna meningkatkan sistem keamanan lingkungan (siskamling). Pembangunan ini didanai oleh swadaya masyarakat dan bantuan dari dana kas padukuhan. Dengan adanya pos ronda baru yang lebih nyaman, diharapkan ronda malam dapat berjalan lebih aktif dan tertib.",
+    gambar: "/hero-desa.png",
+    penulis: "Keamanan Desa",
+    tanggal_publish: "2026-07-02",
+  },
+  {
+    id: 5,
+    judul: "Lomba Senam Sehat Ibu-Ibu Mewarnai Hari Jadi Padukuhan Plasan",
+    slug: "lomba-senam-sehat-hari-jadi",
+    isi: "Kemeriahan hari jadi Padukuhan Plasan diisi dengan berbagai perlombaan, salah satunya lomba senam sehat antar-RT yang diikuti oleh ibu-ibu. Kegiatan ini tidak hanya meningkatkan kebugaran jasmani tetapi juga mempererat silaturahmi antar-warga. Pemenang lomba mendapatkan hadiah menarik yang disiapkan panitia.",
+    gambar: "/hero-desa.png",
+    penulis: "Panitia Ultah",
+    tanggal_publish: "2026-07-10",
+  },
 ];
 
 export const initialKegiatan: Kegiatan[] = [
@@ -340,6 +358,28 @@ export const initialKegiatan: Kegiatan[] = [
     waktu_selesai: "13:00",
     gambar: "/hero-desa.png",
   },
+  {
+    id: 4,
+    nama_kegiatan: "Pengajian Rutin Bulanan Warga Plasan",
+    slug: "pengajian-rutin-bulanan",
+    deskripsi: "Pengajian rutin tingkat padukuhan yang dilaksanakan untuk meningkatkan iman dan takwa serta mempererat ukhuwah islamiyah. Terbuka untuk seluruh warga Plasan.",
+    tanggal_mulai: "2026-07-25",
+    tanggal_selesai: "2026-07-25",
+    waktu_mulai: "19:30",
+    waktu_selesai: "21:30",
+    gambar: "/hero-desa.png",
+  },
+  {
+    id: 5,
+    nama_kegiatan: "Turnamen Voli Antar-RT Piala Padukuhan",
+    slug: "turnamen-voli-piala-padukuhan",
+    deskripsi: "Turnamen olahraga voli tahunan yang mempertemukan perwakilan tim dari masing-masing RT di lapangan utama Padukuhan Plasan. Ayo dukung RT kesayangan Anda!",
+    tanggal_mulai: "2026-08-01",
+    tanggal_selesai: "2026-08-03",
+    waktu_mulai: "15:30",
+    waktu_selesai: "18:00",
+    gambar: "/hero-desa.png",
+  },
 ];
 
 export const initialGallery: GalleryItem[] = [
@@ -366,6 +406,22 @@ export const initialGallery: GalleryItem[] = [
     gambar: "/hero-desa.png",
     kategori: "Kegiatan Warga",
     tanggal_upload: "2026-06-22",
+  },
+  {
+    id: 4,
+    judul: "Penyaluran Bantuan Sembako",
+    deskripsi: "Dokumentasi penyerahan bantuan sosial berupa paket sembako dari kelurahan untuk warga pra-sejahtera di Plasan.",
+    gambar: "/hero-desa.png",
+    kategori: "Sosial",
+    tanggal_upload: "2026-06-30",
+  },
+  {
+    id: 5,
+    judul: "Pelatihan Musik Gamelan",
+    deskripsi: "Pelatihan seni gamelan bagi pemuda-pemudi desa guna melestarikan kebudayaan tradisional Jawa.",
+    gambar: "/hero-desa.png",
+    kategori: "Kebudayaan",
+    tanggal_upload: "2026-07-05",
   },
 ];
 

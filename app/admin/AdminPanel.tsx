@@ -21,8 +21,9 @@ type AdminRecord = {
 type FieldConfig = {
   name: string;
   label: string;
-  type?: "text" | "number" | "date" | "time" | "textarea" | "image";
+  type?: "text" | "number" | "date" | "time" | "textarea" | "image" | "select";
   required?: boolean;
+  options?: string[];
 };
 
 type ResourceConfig = {
@@ -88,7 +89,13 @@ const resources: ResourceConfig[] = [
       { name: "judul", label: "Judul", required: true },
       { name: "deskripsi", label: "Deskripsi", type: "textarea", required: false },
       { name: "gambar", label: "Gambar", type: "image", required: false },
-      { name: "kategori", label: "Kategori", required: false },
+      {
+        name: "kategori",
+        label: "Kategori",
+        type: "select",
+        required: true,
+        options: ["Kegiatan Warga", "UMKM", "Potensi Wilayah"],
+      },
       { name: "tanggal_upload", label: "Tanggal Upload", type: "date", required: false },
     ],
   },
@@ -110,7 +117,7 @@ const resources: ResourceConfig[] = [
       { name: "jumlah_rt", label: "Jumlah RT", type: "number", required: false },
       { name: "jumlah_rw", label: "Jumlah RW", type: "number", required: false },
       { name: "luas_wilayah", label: "Luas Wilayah", required: false },
-      { name: "jumlah_balita", label: "Jumlah Balita (0-5 tahun)", type: "number", required: false },
+      { name: "jumlah_balita", label: "Jumlah Balita (0-4 tahun)", type: "number", required: false },
       { name: "jumlah_anak", label: "Jumlah Anak-anak (6-17 tahun)", type: "number", required: false },
       { name: "jumlah_lansia", label: "Jumlah Lansia (>=60 tahun)", type: "number", required: false },
       { name: "pendidikan_paud", label: "Pendidikan PAUD", type: "number", required: false },
@@ -657,6 +664,20 @@ export default function AdminPanel() {
                           name={field.name}
                           required={field.required}
                         />
+                      ) : field.type === "select" ? (
+                        <select
+                          className="mt-2 w-full rounded-md border border-[#d8d1c0] px-3 py-3 outline-none focus:border-[#697a36] bg-white font-normal text-sm cursor-pointer"
+                          defaultValue={String(formRecord[field.name] ?? "")}
+                          name={field.name}
+                          required={field.required}
+                        >
+                          <option value="">-- Pilih {field.label} --</option>
+                          {field.options?.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
                       ) : field.type === "image" ? (
                         <ImageUploadField
                           field={field}

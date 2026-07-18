@@ -2,6 +2,7 @@ import Link from "next/link";
 import VillageImage from "./components/VillageImage";
 import AdminLoginButton from "./components/AdminLoginButton";
 import HomeStats from "./components/HomeStats";
+import ScrollContainer from "./components/ScrollContainer";
 import {
   Berita,
   desa as staticDesa,
@@ -168,12 +169,14 @@ export default async function Home() {
           <p className="section-kicker">Kabar Padukuhan</p>
           <h2 className="section-title">Berita & Informasi Terbaru</h2>
         </div>
-        <div className="grid gap-6 lg:grid-cols-3">
+        <ScrollContainer className="grid gap-6 lg:grid-cols-3" itemCount={berita.length}>
           {berita.map((item) => (
             <Link 
               key={item.id} 
               href={`/berita/${item.slug}`}
-              className="group overflow-hidden rounded-xl border border-[#e0dacb] bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/40 hover:-translate-y-1 flex flex-col cursor-pointer"
+              className={`group overflow-hidden rounded-xl border border-[#e0dacb] bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/40 hover:-translate-y-1 flex flex-col cursor-pointer ${
+                berita.length > 3 ? "w-[290px] sm:w-[360px] shrink-0 snap-start" : "w-full"
+              }`}
             >
               <div className="relative aspect-[16/10] overflow-hidden bg-[#fcfbfa]">
                 <VillageImage src={item.gambar} alt={item.judul} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -193,7 +196,7 @@ export default async function Home() {
               </div>
             </Link>
           ))}
-        </div>
+        </ScrollContainer>
       </section>
 
       <section id="kegiatan" className="bg-[#1b352c] py-24 text-white">
@@ -202,12 +205,14 @@ export default async function Home() {
             <p className="section-kicker text-[#e7c765]">Agenda Padukuhan</p>
             <h2 className="max-w-2xl text-3xl font-bold font-serif sm:text-4xl leading-tight">Kegiatan Mendatang di Plasan</h2>
           </div>
-          <div className="grid gap-6 lg:grid-cols-3">
+          <ScrollContainer className="grid gap-6 lg:grid-cols-3" itemCount={kegiatan.length}>
             {kegiatan.map((item) => (
               <Link 
                 key={item.id} 
                 href={`/kegiatan/${item.slug}`}
-                className="group rounded-xl border border-white/10 bg-white/5 p-6 transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:-translate-y-1 shadow-sm hover:shadow-md border-l-4 border-l-[#e7c765] flex flex-col cursor-pointer"
+                className={`group rounded-xl border border-white/10 bg-white/5 p-6 transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:-translate-y-1 shadow-sm hover:shadow-md border-l-4 border-l-[#e7c765] flex flex-col cursor-pointer ${
+                  kegiatan.length > 3 ? "w-[290px] sm:w-[360px] shrink-0 snap-start" : "w-full"
+                }`}
               >
                 <p className="text-xs font-bold uppercase tracking-wider text-[#f2d778]">
                   {formatDate(item.tanggal_mulai)} • {item.waktu_mulai} - {item.waktu_selesai} WIB
@@ -222,7 +227,7 @@ export default async function Home() {
                 </span>
               </Link>
             ))}
-          </div>
+          </ScrollContainer>
         </div>
       </section>
 
@@ -231,22 +236,24 @@ export default async function Home() {
           <p className="section-kicker">Galeri Dokumentasi</p>
           <h2 className="section-title">Potret Kegiatan Plasan</h2>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
+        <ScrollContainer className="grid gap-6 md:grid-cols-3" itemCount={gallery.length}>
           {gallery.map((item) => (
-            <article key={item.id} className="group overflow-hidden rounded-xl border border-[#e0dacb] bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/40 hover:-translate-y-1">
+            <article key={item.id} className={`group overflow-hidden rounded-xl border border-[#e0dacb] bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/40 hover:-translate-y-1 flex flex-col ${
+              gallery.length > 3 ? "w-[290px] sm:w-[360px] shrink-0 snap-start" : "w-full"
+            }`}>
               <div className="relative aspect-square overflow-hidden">
                 <VillageImage src={item.gambar} alt={item.judul} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
               </div>
-              <div className="p-6">
-                <span className="inline-block rounded bg-[#f6f3ec] px-2 py-1 text-xs font-bold uppercase tracking-wider text-[#697a36]">
+              <div className="p-6 flex-grow flex flex-col">
+                <span className="inline-block self-start rounded bg-[#f6f3ec] px-2 py-1 text-xs font-bold uppercase tracking-wider text-[#697a36]">
                   {item.kategori}
                 </span>
                 <h3 className="mt-3 text-lg font-bold leading-snug text-[#1e2c26]">{item.judul}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[#5b6b63]">{item.deskripsi}</p>
+                <p className="mt-2 text-sm leading-relaxed text-[#5b6b63] flex-grow">{item.deskripsi}</p>
               </div>
             </article>
           ))}
-        </div>
+        </ScrollContainer>
       </section>
 
       <footer id="kontak" className="bg-[#132720] px-5 py-12 text-white sm:px-8 border-t border-white/5">

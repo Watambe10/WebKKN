@@ -171,7 +171,7 @@ export default function MonografiClient({ monografiDesa, desa }: MonografiClient
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-4 transition hover:border-[#697a36]/30">
-                <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Balita (0-5 Thn)</span>
+                <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Balita (0-4 Thn)</span>
                 <span className="text-2xl font-bold block mt-2 text-[#1e2c26]">{formatNumber(monografiTerbaru.jumlah_balita || 0)} <span className="text-xs font-medium text-[#5b6b63]">jiwa</span></span>
                 <span className="text-[10px] text-[#5b6b63] mt-1 block">{(pctBalita).toFixed(1)}% dari total warga</span>
               </div>
