@@ -238,20 +238,30 @@ export default async function Home() {
         </div>
         <ScrollContainer className="grid gap-6 md:grid-cols-3" itemCount={gallery.length}>
           {gallery.map((item) => (
-            <article key={item.id} className={`group overflow-hidden rounded-xl border border-[#e0dacb] bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/40 hover:-translate-y-1 flex flex-col ${
-              gallery.length > 3 ? "w-[290px] sm:w-[360px] shrink-0 snap-start" : "w-full"
-            }`}>
+            <Link 
+              key={item.id} 
+              href={`/galeri/${item.id}`}
+              className={`group overflow-hidden rounded-xl border border-[#e0dacb] bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#697a36]/40 hover:-translate-y-1 flex flex-col cursor-pointer ${
+                gallery.length > 3 ? "w-[290px] sm:w-[360px] shrink-0 snap-start" : "w-full"
+              }`}
+            >
               <div className="relative aspect-square overflow-hidden">
-                <VillageImage src={item.gambar} alt={item.judul} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <VillageImage src={item.gambar ? item.gambar.split("|||")[0] : ""} alt={item.judul} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
               </div>
               <div className="p-6 flex-grow flex flex-col">
                 <span className="inline-block self-start rounded bg-[#f6f3ec] px-2 py-1 text-xs font-bold uppercase tracking-wider text-[#697a36]">
                   {item.kategori}
                 </span>
-                <h3 className="mt-3 text-lg font-bold leading-snug text-[#1e2c26]">{item.judul}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[#5b6b63] flex-grow">{item.deskripsi}</p>
+                <h3 className="mt-3 text-lg font-bold leading-snug text-[#1e2c26] group-hover:text-[#697a36] transition-colors">{item.judul}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#5b6b63] flex-grow line-clamp-3">{item.deskripsi}</p>
+                <span className="mt-4 text-xs font-bold text-[#697a36] inline-flex items-center gap-1 group-hover:text-[#1b352c] transition-colors">
+                  Lihat Dokumentasi
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-0.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </span>
               </div>
-            </article>
+            </Link>
           ))}
         </ScrollContainer>
       </section>

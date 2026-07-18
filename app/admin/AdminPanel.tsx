@@ -24,6 +24,7 @@ type FieldConfig = {
   type?: "text" | "number" | "date" | "time" | "textarea" | "image" | "select";
   required?: boolean;
   options?: string[];
+  multiple?: boolean;
 };
 
 type ResourceConfig = {
@@ -88,7 +89,9 @@ const resources: ResourceConfig[] = [
     fields: [
       { name: "judul", label: "Judul", required: true },
       { name: "deskripsi", label: "Deskripsi", type: "textarea", required: false },
-      { name: "gambar", label: "Gambar", type: "image", required: false },
+      { name: "gambar", label: "Foto 1 (Utama)", type: "image", required: true },
+      { name: "gambar_2", label: "Foto 2 (Tambahan)", type: "image", required: false },
+      { name: "gambar_3", label: "Foto 3 (Tambahan)", type: "image", required: false },
       {
         name: "kategori",
         label: "Kategori",
@@ -118,7 +121,8 @@ const resources: ResourceConfig[] = [
       { name: "jumlah_rw", label: "Jumlah RW", type: "number", required: false },
       { name: "luas_wilayah", label: "Luas Wilayah", required: false },
       { name: "jumlah_balita", label: "Jumlah Balita (0-4 tahun)", type: "number", required: false },
-      { name: "jumlah_anak", label: "Jumlah Anak-anak (6-17 tahun)", type: "number", required: false },
+      { name: "jumlah_anak", label: "Jumlah Anak-anak (5-16 tahun)", type: "number", required: false },
+      { name: "jumlah_dewasa", label: "Jumlah Dewasa (17-60 tahun)", type: "number", required: false },
       { name: "jumlah_lansia", label: "Jumlah Lansia (>=60 tahun)", type: "number", required: false },
       { name: "pendidikan_paud", label: "Pendidikan PAUD", type: "number", required: false },
       { name: "pendidikan_tk", label: "Pendidikan TK", type: "number", required: false },
@@ -189,10 +193,52 @@ const loadData = () => {
   }, {});
 };
 
-const readImageFile = (file: File) =>
+const readImageFile = (file: File, maxW = 1000, maxH = 1000, quality = 0.7): Promise<string> =>
   new Promise<string>((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxW) {
+            height = Math.round((height * maxW) / width);
+            width = maxW;
+          }
+        } else {
+          if (height > maxH) {
+            width = Math.round((width * maxH) / height);
+            height = maxH;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(String(event.target?.result));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error("Gagal memuat gambar untuk kompresi."));
+      img.src = String(event.target?.result);
+    };
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
@@ -247,7 +293,19 @@ export default function AdminPanel() {
   );
 
   const activeRows = data[activeResource.key] ?? activeResource.initialData;
-  const formRecord = editing ?? makeEmptyRecord(activeResource);
+  const formRecord = useMemo(() => {
+    const rec = editing ?? makeEmptyRecord(activeResource);
+    if (activeResource.key === "gallery" && rec.gambar) {
+      const parts = String(rec.gambar).split("|||");
+      return {
+        ...rec,
+        gambar: parts[0] || "",
+        gambar_2: parts[1] || "",
+        gambar_3: parts[2] || "",
+      };
+    }
+    return rec;
+  }, [editing, activeResource]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -300,13 +358,22 @@ export default function AdminPanel() {
     saveRows(activeResource.key, rows);
   };
 
-  const handleImageFile = async (fieldName: string, file?: File) => {
-    if (!file || !file.type.startsWith("image/")) {
-      return;
-    }
+  const handleImageFile = async (fieldName: string, fileOrFiles?: File | File[]) => {
+    if (!fileOrFiles) return;
 
-    const imageData = await readImageFile(file);
-    setImageDrafts((current) => ({ ...current, [fieldName]: imageData }));
+    if (Array.isArray(fileOrFiles)) {
+      const imagePromises = fileOrFiles
+        .filter((f) => f.type.startsWith("image/") || (fieldName === "hero_bg_media" && f.type.startsWith("video/")))
+        .map((f) => readImageFile(f));
+      const imagesData = await Promise.all(imagePromises);
+      setImageDrafts((current) => ({ ...current, [fieldName]: imagesData.join("|||") }));
+    } else {
+      if (!fileOrFiles.type.startsWith("image/") && !(fieldName === "hero_bg_media" && fileOrFiles.type.startsWith("video/"))) {
+        return;
+      }
+      const imageData = await readImageFile(fileOrFiles);
+      setImageDrafts((current) => ({ ...current, [fieldName]: imageData }));
+    }
   };
 
   const handleLogout = () => {
@@ -404,6 +471,7 @@ export default function AdminPanel() {
         const rw = Number(nextRecord.jumlah_rw || 0);
         const balita = Number(nextRecord.jumlah_balita || 0);
         const anak = Number(nextRecord.jumlah_anak || 0);
+        const dewasa = Number(nextRecord.jumlah_dewasa || 0);
         const lansia = Number(nextRecord.jumlah_lansia || 0);
         const paud = Number(nextRecord.pendidikan_paud || 0);
         const tk = Number(nextRecord.pendidikan_tk || 0);
@@ -423,6 +491,7 @@ export default function AdminPanel() {
           rw < 0 ||
           anak < 0 ||
           balita < 0 ||
+          dewasa < 0 ||
           lansia < 0 ||
           paud < 0 ||
           tk < 0 ||
@@ -436,8 +505,8 @@ export default function AdminPanel() {
           validationError = `Jumlah penduduk laki-laki (${laki}) ditambah perempuan (${perempuan}) harus sama dengan total jumlah penduduk (${totalPenduduk}).`;
         } else if (kk > totalPenduduk) {
           validationError = "Jumlah Kepala Keluarga (KK) tidak boleh melebihi total jumlah penduduk.";
-        } else if (anak + balita + lansia > totalPenduduk) {
-          validationError = "Jumlah balita, anak-anak, dan lansia tidak boleh melebihi total jumlah penduduk.";
+        } else if (anak + balita + dewasa + lansia > totalPenduduk) {
+          validationError = "Jumlah balita, anak-anak, dewasa, dan lansia tidak boleh melebihi total jumlah penduduk.";
         } else if (paud + tk + sd + smp + sma + sarjana > totalPenduduk) {
           validationError = "Jumlah warga berdasarkan tingkat pendidikan tidak boleh melebihi total jumlah penduduk.";
         }
@@ -463,6 +532,18 @@ export default function AdminPanel() {
 
     const executeSubmit = async () => {
       const { id, ...payload } = nextRecord;
+      
+      const finalPayload = { ...payload };
+      if (activeResource.key === "gallery") {
+        const images: string[] = [];
+        if (payload.gambar) images.push(String(payload.gambar));
+        if (payload.gambar_2) images.push(String(payload.gambar_2));
+        if (payload.gambar_3) images.push(String(payload.gambar_3));
+        
+        finalPayload.gambar = images.join("|||");
+        delete finalPayload.gambar_2;
+        delete finalPayload.gambar_3;
+      }
 
       try {
         if (activeResource.key === "pengaturan") {
@@ -471,12 +552,12 @@ export default function AdminPanel() {
             await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
               method: "PATCH",
               query: `?id=eq.1`,
-              body: { id: 1, ...payload },
+              body: { id: 1, ...finalPayload },
             });
           } else {
             await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
               method: "POST",
-              body: { id: 1, ...payload },
+              body: { id: 1, ...finalPayload },
             });
           }
           await reloadRows();
@@ -487,13 +568,13 @@ export default function AdminPanel() {
           if (isInsert) {
             await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
               method: "POST",
-              body: payload,
+              body: finalPayload,
             });
           } else {
             await supabaseRequest<AdminRecord[]>(activeResource.tableName, {
               method: "PATCH",
               query: `?id=eq.${id}`,
-              body: payload,
+              body: finalPayload,
             });
           }
 
@@ -740,7 +821,6 @@ export default function AdminPanel() {
                       <article className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center" key={row.id}>
                         <div>
                           <p className="font-bold">{String(row[activeResource.titleField])}</p>
-                          <p className="mt-1 text-sm text-[#5b6b63]">ID: {row.id}</p>
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -847,7 +927,7 @@ function ImageUploadField({
   value,
 }: {
   field: FieldConfig;
-  onFileSelect: (fieldName: string, file?: File) => void;
+  onFileSelect: (fieldName: string, fileOrFiles?: File | File[]) => void;
   value: string;
 }) {
   const isHeroBgMedia = field.name === "hero_bg_media";
@@ -855,13 +935,24 @@ function ImageUploadField({
 
   const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
-    onFileSelect(field.name, event.dataTransfer.files[0]);
+    const files = Array.from(event.dataTransfer.files);
+    if (field.multiple) {
+      onFileSelect(field.name, files);
+    } else {
+      onFileSelect(field.name, files[0]);
+    }
   };
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onFileSelect(field.name, event.target.files?.[0]);
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    if (field.multiple) {
+      onFileSelect(field.name, files);
+    } else {
+      onFileSelect(field.name, files[0]);
+    }
   };
 
+  const images = value ? value.split("|||") : [];
   const isVideo = value.startsWith("data:video/") || value.endsWith(".mp4") || value.endsWith(".webm") || value.endsWith(".mov") || value.endsWith(".ogg");
 
   return (
@@ -873,9 +964,20 @@ function ImageUploadField({
         className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-md bg-white px-4 py-5 text-center transition hover:bg-[#f6f3ec]"
         onDrop={handleDrop}
       >
-        <input accept={acceptTypes} className="sr-only" name={field.name} onChange={handleChange} type="file" />
+        <input accept={acceptTypes} className="sr-only" name={field.name} onChange={handleChange} type="file" multiple={field.multiple} />
         {value ? (
-          isVideo ? (
+          field.multiple ? (
+            <div className="flex flex-wrap gap-2 mb-4 justify-center">
+              {images.map((imgUrl, idx) => (
+                <img
+                  key={idx}
+                  alt={`Pratinjau gambar ${idx + 1}`}
+                  className="max-h-24 rounded-md object-cover border border-[#e0dacb]"
+                  src={imgUrl}
+                />
+              ))}
+            </div>
+          ) : isVideo ? (
             <video controls className="mb-4 max-h-44 rounded-md object-cover w-full max-w-[200px]" src={value} />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
@@ -883,10 +985,16 @@ function ImageUploadField({
           )
         ) : null}
         <span className="text-sm font-bold text-[#1b352c]">
-          {isHeroBgMedia ? "Pilih gambar atau video dari device" : "Pilih gambar dari device"}
+          {field.multiple 
+            ? "Pilih satu atau beberapa gambar dari device" 
+            : isHeroBgMedia 
+            ? "Pilih gambar atau video dari device" 
+            : "Pilih gambar dari device"}
         </span>
         <span className="mt-1 text-xs font-medium text-[#5b6b63]">
-          {isHeroBgMedia 
+          {field.multiple
+            ? "Mendukung pemilihan banyak file gambar sekaligus (PNG, JPG, JPEG, WEBP)"
+            : isHeroBgMedia 
             ? "Mendukung format gambar (PNG, JPG, WEBP) atau video (MP4, WEBM)"
             : "Mendukung format PNG, JPG, JPEG, WEBP, GIF, dll."}
         </span>

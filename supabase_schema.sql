@@ -4,6 +4,7 @@
 -- 1. Tambahkan kolom baru ke tabel monografi_desa (jika belum ada)
 ALTER TABLE monografi_desa ADD COLUMN IF NOT EXISTS nama_kepala_dusun TEXT DEFAULT '';
 ALTER TABLE monografi_desa ADD COLUMN IF NOT EXISTS jumlah_lansia INT DEFAULT 0;
+ALTER TABLE monografi_desa ADD COLUMN IF NOT EXISTS jumlah_dewasa INT DEFAULT 0;
 ALTER TABLE monografi_desa ADD COLUMN IF NOT EXISTS pendidikan_tk INT DEFAULT 0;
 ALTER TABLE monografi_desa ADD COLUMN IF NOT EXISTS pendidikan_sarjana INT DEFAULT 0;
 

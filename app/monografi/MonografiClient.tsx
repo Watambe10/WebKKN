@@ -35,6 +35,7 @@ export default function MonografiClient({ monografiDesa, desa }: MonografiClient
   const pctAnak = ((monografiTerbaru.jumlah_anak || 0) / totalPenduduk) * 100;
   const pctBalita = ((monografiTerbaru.jumlah_balita || 0) / totalPenduduk) * 100;
   const pctLansia = ((monografiTerbaru.jumlah_lansia || 0) / totalPenduduk) * 100;
+  const pctDewasa = ((monografiTerbaru.jumlah_dewasa || 0) / totalPenduduk) * 100;
 
   const pctPaud = ((monografiTerbaru.pendidikan_paud || 0) / totalPenduduk) * 100;
   const pctTk = ((monografiTerbaru.pendidikan_tk || 0) / totalPenduduk) * 100;
@@ -167,18 +168,23 @@ export default function MonografiClient({ monografiDesa, desa }: MonografiClient
         <div className="lg:col-span-5 flex flex-col gap-6">
           {/* Children, Toddlers & Elderly Stats Card */}
           <div className="rounded-xl border border-[#e0dacb] bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-[#1e2c26] font-serif mb-4">Detail Usia Rentan ({selectedYear})</h3>
+            <h3 className="text-lg font-bold text-[#1e2c26] font-serif mb-4">Detail Kelompok Usia ({selectedYear})</h3>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-4 transition hover:border-[#697a36]/30">
                 <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Balita (0-4 Thn)</span>
                 <span className="text-2xl font-bold block mt-2 text-[#1e2c26]">{formatNumber(monografiTerbaru.jumlah_balita || 0)} <span className="text-xs font-medium text-[#5b6b63]">jiwa</span></span>
                 <span className="text-[10px] text-[#5b6b63] mt-1 block">{(pctBalita).toFixed(1)}% dari total warga</span>
               </div>
               <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-4 transition hover:border-[#697a36]/30">
-                <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Anak (6-17 Thn)</span>
+                <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Anak (5-16 Thn)</span>
                 <span className="text-2xl font-bold block mt-2 text-[#1e2c26]">{formatNumber(monografiTerbaru.jumlah_anak || 0)} <span className="text-xs font-medium text-[#5b6b63]">jiwa</span></span>
                 <span className="text-[10px] text-[#5b6b63] mt-1 block">{(pctAnak).toFixed(1)}% dari total warga</span>
+              </div>
+              <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-4 transition hover:border-[#697a36]/30">
+                <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Dewasa (17-60 Thn)</span>
+                <span className="text-2xl font-bold block mt-2 text-[#1e2c26]">{formatNumber(monografiTerbaru.jumlah_dewasa || 0)} <span className="text-xs font-medium text-[#5b6b63]">jiwa</span></span>
+                <span className="text-[10px] text-[#5b6b63] mt-1 block">{(pctDewasa).toFixed(1)}% dari total warga</span>
               </div>
               <div className="bg-[#fcfbfa] border border-[#e7e1d3] rounded-lg p-4 transition hover:border-[#697a36]/30">
                 <span className="text-xs font-bold text-[#697a36] uppercase tracking-wider block">Lansia (≥60 Thn)</span>

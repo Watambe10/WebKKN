@@ -1,0 +1,42 @@
+[
+  {
+    "id": 17,
+    "judul": "Persawahan Hijau Plasan",
+    "deskripsi": "Pemandangan sawah irigasi di wilayah Padukuhan Plasan yang menjadi sumber mata pencaharian utama may...",
+    "kategori": "Potensi Wilayah",
+    "tanggal_upload": "2026-06-15",
+    "created_at": "2026-07-14T14:07:32.575934+00:00",
+    "gambar_length": 14,
+    "gambar_preview": "/hero-desa.png..."
+  },
+  {
+    "id": 18,
+    "judul": "Produk Kerajinan Bambu",
+    "deskripsi": "Hasil kerajinan anyaman bambu buatan warga Plasan yang dipasarkan ke berbagai wilayah sekitar....",
+    "kategori": "UMKM",
+    "tanggal_upload": "2026-06-18",
+    "created_at": "2026-07-14T14:07:32.575934+00:00",
+    "gambar_length": 14,
+    "gambar_preview": "/hero-desa.png..."
+  },
+  {
+    "id": 21,
+    "judul": "Senam Bersama ",
+    "deskripsi": "Kegiatan senam bersama yang diikuti warga Padukuhan Plasan sebagai upaya menjaga kebugaran tubuh, me...",
+    "kategori": "Kegiatan Warga",
+    "tanggal_upload": "2026-07-12",
+    "created_at": "2026-07-18T03:43:48.383029+00:00",
+    "gambar_length": 1370747,
+    "gambar_preview": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD..."
+  },
+  {
+    "id": 23,
+    "judul": "Analisis Kapasitas Produksi Pada UMKM Tempe Mbah Wasinem",
+    "deskripsi": "Analisis kapasitas produksi pada UMKM Tempe Mbah Wasinem dilakukan menggunakan metode Time Study unt...",
+    "kategori": "UMKM",
+    "tanggal_upload": "2026-07-15",
+    "created_at": "2026-07-18T05:08:46.589779+00:00",
+    "gambar_length": 3851299,
+    "gambar_preview": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD..."
+  }
+]

@@ -44,6 +44,7 @@ const monografiData = [
     jumlah_anak: 260,
     jumlah_balita: 125,
     jumlah_lansia: 145,
+    jumlah_dewasa: 740,
     pendidikan_paud: 85,
     pendidikan_tk: 75,
     pendidikan_sd: 225,
@@ -76,6 +77,7 @@ const monografiData = [
     jumlah_anak: 250,
     jumlah_balita: 120,
     jumlah_lansia: 140,
+    jumlah_dewasa: 740,
     pendidikan_paud: 80,
     pendidikan_tk: 70,
     pendidikan_sd: 220,
@@ -108,6 +110,7 @@ const monografiData = [
     jumlah_anak: 240,
     jumlah_balita: 115,
     jumlah_lansia: 135,
+    jumlah_dewasa: 745,
     pendidikan_paud: 75,
     pendidikan_tk: 65,
     pendidikan_sd: 215,
@@ -140,6 +143,7 @@ const monografiData = [
     jumlah_anak: 230,
     jumlah_balita: 110,
     jumlah_lansia: 130,
+    jumlah_dewasa: 740,
     pendidikan_paud: 70,
     pendidikan_tk: 60,
     pendidikan_sd: 210,
@@ -172,6 +176,7 @@ const monografiData = [
     jumlah_anak: 225,
     jumlah_balita: 105,
     jumlah_lansia: 125,
+    jumlah_dewasa: 740,
     pendidikan_paud: 65,
     pendidikan_tk: 55,
     pendidikan_sd: 205,
@@ -293,6 +298,20 @@ const galleryData = [
     gambar: "/hero-desa.png",
     kategori: "Kegiatan Warga",
     tanggal_upload: "2026-06-22"
+  },
+  {
+    judul: "Penyaluran Bantuan Sembako",
+    deskripsi: "Dokumentasi penyerahan bantuan sosial berupa paket sembako dari kelurahan untuk warga pra-sejahtera di Plasan.",
+    gambar: "/hero-desa.png",
+    kategori: "Kegiatan Warga",
+    tanggal_upload: "2026-06-30"
+  },
+  {
+    judul: "Pelatihan Musik Gamelan",
+    deskripsi: "Pelatihan seni gamelan bagi pemuda-pemudi desa guna melestarikan kebudayaan tradisional Jawa.",
+    gambar: "/hero-desa.png",
+    kategori: "Kegiatan Warga",
+    tanggal_upload: "2026-07-05"
   }
 ];
 
