@@ -20,7 +20,7 @@ type Props = {
 async function getGalleryData(id: number) {
   try {
     const allGallery = await getSupabaseRows<GalleryItem>("gallery", "tanggal_upload");
-    const items = allGallery.length ? allGallery : initialGallery;
+    const items = allGallery;
     
     const currentItem = items.find(item => Number(item.id) === id) || null;
     if (!currentItem) return null;
@@ -75,50 +75,7 @@ async function getGalleryData(id: number) {
     };
   } catch (error) {
     console.error("Gagal mengambil data galeri:", error);
-    // Fallback to local data
-    const currentItem = initialGallery.find(item => Number(item.id) === id) || null;
-    if (!currentItem) return null;
-    
-    const currentImages = currentItem.gambar ? currentItem.gambar.split("|||") : [];
-    let resultPhotos: GalleryItem[] = [];
-    
-    currentImages.forEach((img, idx) => {
-      resultPhotos.push({
-        ...currentItem,
-        id: Number(currentItem.id) * 1000 + idx,
-        gambar: img,
-      });
-    });
-    
-    if (resultPhotos.length < 3) {
-      const related = initialGallery.filter(item => Number(item.id) !== id);
-      const sameCategory = related.filter(item => item.kategori === currentItem.kategori);
-      const fillItems = sameCategory.length >= 2 ? sameCategory : related;
-      
-      fillItems.forEach((item) => {
-        if (resultPhotos.length < 3) {
-          const itemImgs = item.gambar ? item.gambar.split("|||") : [];
-          itemImgs.forEach((img) => {
-            if (resultPhotos.length < 3) {
-              resultPhotos.push({
-                ...item,
-                gambar: img,
-              });
-            }
-          });
-        }
-      });
-    }
-
-    const initialDisplayItem = {
-      ...currentItem,
-      gambar: currentImages[0] || "",
-    };
-
-    return {
-      currentItem: initialDisplayItem,
-      photos: resultPhotos.slice(0, 3)
-    };
+    return null;
   }
 }
 

@@ -19,10 +19,10 @@ export const metadata: Metadata = {
 async function getMonografiData() {
   try {
     const monografiDesa = await getSupabaseRows<MonografiDesa>("monografi_desa", "tahun");
-    return monografiDesa.length ? monografiDesa : initialMonografiDesa;
+    return monografiDesa;
   } catch (error) {
     console.error("Gagal mengambil data monografi dari Supabase:", error);
-    return initialMonografiDesa;
+    return [];
   }
 }
 

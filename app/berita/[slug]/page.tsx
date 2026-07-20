@@ -25,10 +25,10 @@ async function getBeritaItem(slug: string): Promise<Berita | null> {
       query: `?slug=eq.${slug}`,
     });
     if (data.length) return data[0];
-  } catch {}
-  
-  // Fallback to local initialBerita
-  return initialBerita.find((b) => b.slug === slug) || null;
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 async function getPengaturanData() {

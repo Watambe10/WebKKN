@@ -25,10 +25,10 @@ async function getKegiatanItem(slug: string): Promise<Kegiatan | null> {
       query: `?slug=eq.${slug}`,
     });
     if (data.length) return data[0];
-  } catch {}
-  
-  // Fallback to local initialKegiatan
-  return initialKegiatan.find((k) => k.slug === slug) || null;
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 async function getPengaturanData() {
@@ -120,15 +120,13 @@ export default async function KegiatanDetailPage({ params }: Props) {
           <div className="lg:col-span-8 flex flex-col gap-6">
             <article className="bg-white rounded-2xl border border-[#e0dacb] overflow-hidden shadow-sm flex-grow">
               {/* Cover Image */}
-              {kegiatanItem.gambar && (
-                <div className="relative aspect-[21/10] w-full overflow-hidden border-b border-[#e0dacb] bg-[#fcfbfa]">
-                  <VillageImage
-                    src={kegiatanItem.gambar}
-                    alt={kegiatanItem.nama_kegiatan}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              )}
+              <div className="relative aspect-[21/10] w-full overflow-hidden border-b border-[#e0dacb] bg-[#fcfbfa]">
+                <VillageImage
+                  src={kegiatanItem.gambar || "/hero-desa.png"}
+                  alt={kegiatanItem.nama_kegiatan}
+                  className="h-full w-full object-cover"
+                />
+              </div>
               <div className="px-6 py-8 sm:px-8 sm:py-8">
                 {/* Title */}
                 <span className="text-xs font-bold uppercase tracking-wider text-[#697a36] block mb-2">Detail Agenda Warga</span>

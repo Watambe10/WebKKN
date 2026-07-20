@@ -34,9 +34,7 @@ export async function supabaseRequest<T>(
     method,
     headers: getHeaders(),
     body: body ? JSON.stringify(body) : undefined,
-    ...(method === "GET"
-      ? (process.env.NODE_ENV === "development" ? { cache: "no-store" } : { next: { revalidate: 1 } })
-      : { cache: "no-store" }),
+    ...(method === "GET" ? { cache: "no-store" } : {}),
   });
 
   if (!response.ok) {

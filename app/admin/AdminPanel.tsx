@@ -5,10 +5,6 @@ import { useRouter } from "next/navigation";
 import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import {
   desa,
-  initialBerita,
-  initialGallery,
-  initialKegiatan,
-  initialMonografiDesa,
   initialPengaturan,
 } from "../lib/data";
 import { supabaseRequest } from "../lib/supabase";
@@ -46,13 +42,12 @@ const resources: ResourceConfig[] = [
     key: "berita",
     label: "Berita",
     description: "Kelola judul, isi berita, gambar, penulis, dan tanggal publikasi.",
-    initialData: initialBerita as unknown as AdminRecord[],
+    initialData: [],
     orderBy: "tanggal_publish",
     tableName: "berita",
     titleField: "judul",
     fields: [
       { name: "judul", label: "Judul", required: true },
-      { name: "slug", label: "Slug" },
       { name: "isi", label: "Isi", type: "textarea", required: false },
       { name: "gambar", label: "Gambar", type: "image", required: false },
       { name: "penulis", label: "Penulis", required: false },
@@ -62,27 +57,25 @@ const resources: ResourceConfig[] = [
   {
     key: "kegiatan",
     label: "Kegiatan",
-    description: "Kelola agenda, deskripsi, tanggal, waktu, dan gambar kegiatan desa.",
-    initialData: initialKegiatan as unknown as AdminRecord[],
+    description: "Kelola agenda, deskripsi, tanggal, dan waktu kegiatan desa.",
+    initialData: [],
     orderBy: "tanggal_mulai",
     tableName: "kegiatan",
     titleField: "nama_kegiatan",
     fields: [
       { name: "nama_kegiatan", label: "Nama Kegiatan", required: true },
-      { name: "slug", label: "Slug" },
       { name: "deskripsi", label: "Deskripsi", type: "textarea", required: false },
       { name: "tanggal_mulai", label: "Tanggal Mulai", type: "date", required: false },
       { name: "tanggal_selesai", label: "Tanggal Selesai", type: "date", required: false },
       { name: "waktu_mulai", label: "Waktu Mulai", type: "time", required: false },
       { name: "waktu_selesai", label: "Waktu Selesai", type: "time", required: false },
-      { name: "gambar", label: "Gambar", type: "image", required: false },
     ],
   },
   {
     key: "gallery",
     label: "Galeri",
     description: "Kelola dokumentasi foto, kategori, deskripsi, dan tanggal unggah.",
-    initialData: initialGallery as unknown as AdminRecord[],
+    initialData: [],
     orderBy: "tanggal_upload",
     tableName: "gallery",
     titleField: "judul",
@@ -106,7 +99,7 @@ const resources: ResourceConfig[] = [
     key: "monografi",
     label: "Monografi",
     description: "Kelola data penduduk, pimpinan, kelompok usia, tingkat pendidikan, dan wilayah berdasarkan tahun.",
-    initialData: initialMonografiDesa as unknown as AdminRecord[],
+    initialData: [],
     orderBy: "tahun",
     tableName: "monografi_desa",
     titleField: "tahun",
@@ -188,12 +181,12 @@ const loadSession = () => {
 
 const loadData = () => {
   return resources.reduce<Record<string, AdminRecord[]>>((collection, resource) => {
-    collection[resource.key] = resource.initialData;
+    collection[resource.key] = [];
     return collection;
   }, {});
 };
 
-const readImageFile = (file: File, maxW = 1000, maxH = 1000, quality = 0.7): Promise<string> =>
+const readImageFile = (file: File, maxW = 800, maxH = 800, quality = 0.65): Promise<string> =>
   new Promise<string>((resolve, reject) => {
     if (!file.type.startsWith("image/")) {
       const reader = new FileReader();
@@ -245,6 +238,9 @@ const readImageFile = (file: File, maxW = 1000, maxH = 1000, quality = 0.7): Pro
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
+    if (error.message.includes("Failed to fetch")) {
+      return "Gagal terhubung ke server database (Cek jaringan atau coba kompres gambar).";
+    }
     return error.message;
   }
 
@@ -263,10 +259,32 @@ export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(loadSession);
   const [activeKey, setActiveKey] = useState(resources[0].key);
   const [data, setData] = useState<Record<string, AdminRecord[]>>(loadData);
+  const [loadingKeys, setLoadingKeys] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<AdminRecord | null>(null);
   const [imageDrafts, setImageDrafts] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState<"success" | "error" | "info" | "">("");
+  const [tableStatusMessage, setTableStatusMessage] = useState("");
+  const [tableStatusType, setTableStatusType] = useState<"success" | "error" | "">("");
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error" | "info";
+  }>({ show: false, message: "", type: "success" });
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    setToast({ show: true, message, type });
+  };
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast((prev) => ({ ...prev, show: false }));
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     type: "add" | "edit" | "delete" | "reset";
@@ -292,7 +310,7 @@ export default function AdminPanel() {
     [activeKey],
   );
 
-  const activeRows = data[activeResource.key] ?? activeResource.initialData;
+  const activeRows = data[activeResource.key] ?? [];
   const formRecord = useMemo(() => {
     const rec = editing ?? makeEmptyRecord(activeResource);
     if (activeResource.key === "gallery" && rec.gambar) {
@@ -313,6 +331,7 @@ export default function AdminPanel() {
     }
 
     let ignore = false;
+    setLoadingKeys((prev) => ({ ...prev, [activeResource.key]: true }));
 
     supabaseRequest<AdminRecord[]>(activeResource.tableName, {
       query: activeResource.key === "pengaturan" ? "?select=*" : `?select=*&order=${activeResource.orderBy}.desc`,
@@ -339,6 +358,11 @@ export default function AdminPanel() {
           if (activeResource.key === "pengaturan") {
             setEditing({ ...initialPengaturan } as unknown as AdminRecord);
           }
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoadingKeys((prev) => ({ ...prev, [activeResource.key]: false }));
         }
       });
 
@@ -543,6 +567,8 @@ export default function AdminPanel() {
         finalPayload.gambar = images.join("|||");
         delete finalPayload.gambar_2;
         delete finalPayload.gambar_3;
+      } else if (activeResource.key === "kegiatan") {
+        finalPayload.gambar = "/hero-desa.png";
       }
 
       try {
@@ -581,6 +607,7 @@ export default function AdminPanel() {
           await reloadRows();
           setEditing(null);
           setImageDrafts({});
+          setTableStatusMessage("");
           setStatusMessage(isInsert ? "Data berhasil ditambahkan." : "Data berhasil diubah.");
           setStatusType("success");
           form.reset();
@@ -617,11 +644,14 @@ export default function AdminPanel() {
       await reloadRows();
       setEditing(null);
       setImageDrafts({});
-      setStatusMessage("Data berhasil dihapus.");
-      setStatusType("success");
+      setTableStatusMessage("Data berhasil dihapus.");
+      setTableStatusType("success");
+      showToast("Data berhasil dihapus.", "success");
     } catch (error) {
-      setStatusMessage(`Data gagal dihapus: ${getErrorMessage(error)}`);
-      setStatusType("error");
+      const errMsg = `Data gagal dihapus: ${getErrorMessage(error)}`;
+      setTableStatusMessage(errMsg);
+      setTableStatusType("error");
+      showToast(errMsg, "error");
     }
   };
 
@@ -629,6 +659,10 @@ export default function AdminPanel() {
     setActiveKey(resourceKey);
     setEditing(null);
     setImageDrafts({});
+    setStatusMessage("");
+    setStatusType("");
+    setTableStatusMessage("");
+    setTableStatusType("");
   };
 
   if (!isAuthenticated) {
@@ -723,6 +757,9 @@ export default function AdminPanel() {
                       onClick={() => {
                         setEditing(null);
                         setImageDrafts({});
+                        setStatusMessage("");
+                        setStatusType("");
+                        setTableStatusMessage("");
                       }}
                       type="button"
                     >
@@ -816,46 +853,82 @@ export default function AdminPanel() {
                     <h2 className="text-2xl font-bold">Daftar {activeResource.label}</h2>
                     <p className="mt-2 text-sm text-[#5b6b63]">Total data: {activeRows.length}</p>
                   </div>
-                  <div className="divide-y divide-[#e7e1d3]">
-                    {activeRows.map((row) => (
-                      <article className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center" key={row.id}>
-                        <div>
-                          <p className="font-bold">{String(row[activeResource.titleField])}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[#f6f3ec] transition"
-                            onClick={() => {
-                              setEditing(row);
-                              setImageDrafts({});
-                            }}
-                            type="button"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 transition-colors cursor-pointer"
-                            onClick={() => {
-                              const rowTitle = String(row[activeResource.titleField] ?? row.id);
-                              setConfirmModal({
-                                isOpen: true,
-                                type: "delete",
-                                title: "Konfirmasi Hapus Data",
-                                message: `Apakah Anda yakin ingin menghapus data "${rowTitle}"? Tindakan ini tidak dapat dibatalkan.`,
-                                onConfirm: () => {
-                                  handleDelete(row.id);
-                                  setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-                                },
-                              });
-                            }}
-                            type="button"
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
+                  {tableStatusMessage ? (
+                    <div className="px-6 pt-4">
+                      <div
+                        className={`flex items-center gap-2.5 rounded-lg px-4 py-3 text-sm font-semibold border transition-all duration-200 ${
+                          tableStatusType === "error"
+                            ? "bg-red-50 text-red-700 border-red-200"
+                            : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                        }`}
+                      >
+                        {tableStatusType === "error" ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        <span>{tableStatusMessage}</span>
+                      </div>
+                    </div>
+                  ) : null}
+                  {loadingKeys[activeResource.key] ? (
+                    <div className="p-8 text-center text-[#5b6b63] font-medium flex items-center justify-center gap-3">
+                      <svg className="animate-spin h-5 w-5 text-[#697a36]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Memuat data {activeResource.label.toLowerCase()}...</span>
+                    </div>
+                  ) : activeRows.length === 0 ? (
+                    <div className="p-8 text-center text-[#5b6b63]">
+                      Belum ada data {activeResource.label.toLowerCase()}.
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-[#e7e1d3]">
+                      {activeRows.map((row) => (
+                        <article className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center" key={row.id}>
+                          <div>
+                            <p className="font-bold">{String(row[activeResource.titleField])}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              className="rounded-md border border-[#d8d1c0] px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-[#f6f3ec] transition"
+                              onClick={() => {
+                                setEditing(row);
+                                setImageDrafts({});
+                              }}
+                              type="button"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 transition-colors cursor-pointer"
+                              onClick={() => {
+                                const rowTitle = String(row[activeResource.titleField] ?? row.id);
+                                setConfirmModal({
+                                  isOpen: true,
+                                  type: "delete",
+                                  title: "Konfirmasi Hapus Data",
+                                  message: `Apakah Anda yakin ingin menghapus data "${rowTitle}"? Tindakan ini tidak dapat dibatalkan.`,
+                                  onConfirm: () => {
+                                    handleDelete(row.id);
+                                    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                                  },
+                                });
+                              }}
+                              type="button"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </section>
               )}
             </>
@@ -915,6 +988,35 @@ export default function AdminPanel() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification (Top Right Floating) */}
+      {toast.show && (
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-3 rounded-xl border border-[#d8d1c0] bg-white px-5 py-4 shadow-xl animate-fade-in max-w-md">
+          {toast.type === "error" ? (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 border border-red-200">
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+          )}
+          <p className="text-sm font-bold text-[#1e2c26]">{toast.message}</p>
+          <button
+            onClick={() => setToast((prev) => ({ ...prev, show: false }))}
+            className="ml-auto text-[#8e8570] hover:text-[#1e2c26] transition-colors p-1 cursor-pointer"
+            type="button"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
     </main>

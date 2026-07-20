@@ -4,11 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import AdminLoginButton from "../components/AdminLoginButton";
 import MapViewer from "../components/MapViewer";
-import {
-  formatNumber,
-  initialMonografiDesa,
-  MonografiDesa,
-} from "../lib/data";
+import { formatNumber, MonografiDesa } from "../lib/data";
 
 interface MonografiClientProps {
   monografiDesa: MonografiDesa[];
@@ -21,15 +17,46 @@ interface MonografiClientProps {
     telepon: string;
   };
 }
+const emptyMonografi: MonografiDesa = {
+  id: 0,
+  tahun: new Date().getFullYear(),
+  nama_kepala_dusun: "-",
+  jumlah_penduduk: 0,
+  jumlah_laki_laki: 0,
+  jumlah_perempuan: 0,
+  jumlah_kk: 0,
+  jumlah_rt: 0,
+  jumlah_rw: 0,
+  luas_wilayah: "-",
+  jumlah_balita: 0,
+  jumlah_anak: 0,
+  jumlah_dewasa: 0,
+  jumlah_lansia: 0,
+  pendidikan_paud: 0,
+  pendidikan_tk: 0,
+  pendidikan_sd: 0,
+  pendidikan_smp: 0,
+  pendidikan_sma: 0,
+  pendidikan_sarjana: 0,
+  ketua_rw_1: "-",
+  ketua_rt_1: "-",
+  ketua_rt_2: "-",
+  ketua_rt_3: "-",
+  ketua_rt_4: "-",
+  ketua_rt_5: "-",
+  ketua_rt_6: "-",
+  peta_wilayah: "/peta-desa.png",
+  keterangan: "Belum ada data monografi",
+};
 
 export default function MonografiClient({ monografiDesa, desa }: MonografiClientProps) {
   // Extract unique years and sort in descending order
   const years = Array.from(new Set(monografiDesa.map((m) => m.tahun))).sort((a, b) => b - a);
-  const [selectedYear, setSelectedYear] = useState<number>(years[0] || 2027);
+  const [selectedYear, setSelectedYear] = useState<number>(years[0] || new Date().getFullYear());
 
   // Find data for selected year, fallback to first item
   const monografiTerbaru =
-    monografiDesa.find((m) => m.tahun === selectedYear) || monografiDesa[0] || initialMonografiDesa[0];
+    monografiDesa.find((m) => m.tahun === selectedYear) || monografiDesa[0] || emptyMonografi;
 
   const totalPenduduk = monografiTerbaru.jumlah_penduduk || 1;
   const pctAnak = ((monografiTerbaru.jumlah_anak || 0) / totalPenduduk) * 100;
